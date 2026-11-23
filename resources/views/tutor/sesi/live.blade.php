@@ -23,7 +23,7 @@
             </div>
 
             <div class="flex items-center gap-2.5 flex-wrap self-start xl:self-auto">
-                <a href="{{ route('tutor.sesi.qr', $sesi) }}" target="_blank"
+                <a href="{{ route('tutor.sesi.qr', $sesi) }}"
                    class="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-bold text-xs shadow-xs transition flex items-center gap-2">
                     <span class="material-symbols-outlined text-[18px]">qr_code_2</span>
                     <span>Tampilkan Layar QR</span>

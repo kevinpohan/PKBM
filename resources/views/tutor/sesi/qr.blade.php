@@ -102,9 +102,10 @@
     <header class="px-4 sm:px-6 py-3 flex items-center justify-between border-b border-white/10 bg-inverse-surface/90 backdrop-blur-xl z-30">
         <div class="flex items-center gap-3">
             <a href="{{ route('tutor.dashboard') }}"
+               onclick="if (window.history.length > 1) { event.preventDefault(); window.history.back(); }"
                class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-surface text-xs font-bold flex items-center gap-1.5 transition">
                 <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-                <span class="hidden sm:inline">Dashboard</span>
+                <span class="hidden sm:inline">Kembali</span>
             </a>
             <div>
                 <span class="text-xs font-bold text-primary-fixed block uppercase tracking-wider">{{ $sesi->pelatihan->nama }}</span>

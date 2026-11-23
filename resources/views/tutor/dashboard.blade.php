@@ -231,7 +231,7 @@
                                     </button>
                                 @endif
 
-                                <a href="{{ route('tutor.sesi.qr', $sesi) }}" target="_blank"
+                                <a href="{{ route('tutor.sesi.qr', $sesi) }}"
                                    class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded-xl shadow-xs transition">
                                     <span class="material-symbols-outlined text-[18px]">qr_code_2</span>
                                     <span>Layar QR Sesi</span>

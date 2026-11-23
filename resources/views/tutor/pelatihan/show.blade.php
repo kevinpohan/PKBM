@@ -100,7 +100,7 @@
                                         </button>
                                     @endif
 
-                                    <a href="{{ route('tutor.sesi.qr', $sesi) }}" target="_blank"
+                                    <a href="{{ route('tutor.sesi.qr', $sesi) }}"
                                        class="px-3 py-1.5 bg-primary hover:bg-primary-container text-on-primary font-bold text-[11px] rounded-xl shadow-xs transition inline-flex items-center gap-1">
                                         <span class="material-symbols-outlined text-[16px]">qr_code_2</span>
                                         <span>Layar QR</span>
