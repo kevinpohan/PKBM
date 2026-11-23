@@ -179,14 +179,15 @@
         <thead>
             <tr>
                 <th style="width: 8%;">Tanggal</th>
-                <th style="width: 18%;">Judul Sesi</th>
-                <th style="width: 10%;">Jam Sesi</th>
-                <th style="width: 14%;">Lokasi</th>
-                <th style="width: 16%;">Nama Peserta</th>
-                <th style="width: 8%; text-align: center;">Status</th>
-                <th style="width: 12%;">Waktu Server</th>
-                <th style="width: 6%; text-align: center;">Metode</th>
-                <th style="width: 18%;">Catatan Koreksi</th>
+                <th style="width: 17%;">Judul Sesi</th>
+                <th style="width: 15%;">Pelatihan</th>
+                <th style="width: 9%;">Jam Sesi</th>
+                <th style="width: 9%;">Lokasi</th>
+                <th style="width: 14%;">Nama Peserta</th>
+                <th style="width: 7%; text-align: center;">Status</th>
+                <th style="width: 8%;">Waktu Server</th>
+                <th style="width: 5%; text-align: center;">Metode</th>
+                <th style="width: 8%;">Catatan</th>
             </tr>
         </thead>
         <tbody>
@@ -194,6 +195,7 @@
             <tr>
                 <td>{{ $row['tanggal'] }}</td>
                 <td><strong>{{ $row['judul_sesi'] }}</strong></td>
+                <td>{{ $row['pelatihan'] ?? '-' }}</td>
                 <td>{{ $row['jam_sesi'] }}</td>
                 <td>{{ $row['lokasi'] }}</td>
                 <td>{{ $row['nama'] }} <br><span style="font-size: 8px; color: #64748b;">({{ $row['nomor_induk'] }})</span></td>
@@ -206,11 +208,11 @@
                 </td>
                 <td>{{ $row['waktu_server'] }}</td>
                 <td style="text-align: center;">{{ $row['metode'] }}</td>
-                <td style="font-size: 8.5px; color: #475569;">{{ $row['catatan_koreksi'] }}</td>
+                <td style="font-size: 8px; color: #475569;">{{ $row['catatan_koreksi'] }}</td>
             </tr>
             @empty
             <tr>
-                <td colspan="9" style="text-align: center; color: #64748b;">Tidak ada log riwayat presensi sesuai filter.</td>
+                <td colspan="10" style="text-align: center; color: #64748b;">Tidak ada log riwayat presensi sesuai filter.</td>
             </tr>
             @endforelse
         </tbody>

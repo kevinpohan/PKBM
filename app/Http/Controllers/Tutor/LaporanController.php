@@ -4,14 +4,12 @@ namespace App\Http\Controllers\Tutor;
 
 use App\Exports\RekapPresensiExport;
 use App\Http\Controllers\Controller;
-use App\Models\AuditLog;
 use App\Models\Pelatihan;
 use App\Models\Pendaftaran;
 use App\Models\Presensi;
 use App\Models\Sesi;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -22,10 +20,10 @@ class LaporanController extends Controller
         $pelatihans = Pelatihan::orderBy('nama')->get();
         $pesertas = User::where('role', 'peserta')->orderBy('nama')->get();
 
-        $pelatihanId = $request->query('pelatihan_id');
-        $userId = $request->query('user_id');
-        $startDate = $request->query('start_date');
-        $endDate = $request->query('end_date');
+        $pelatihanId = $request->filled('pelatihan_id') ? (int) $request->query('pelatihan_id') : null;
+        $userId = $request->filled('user_id') ? (int) $request->query('user_id') : null;
+        $startDate = $request->filled('start_date') ? (string) $request->query('start_date') : null;
+        $endDate = $request->filled('end_date') ? (string) $request->query('end_date') : null;
 
         $reportData = $this->generateReportData($pelatihanId, $userId, $startDate, $endDate);
 
@@ -41,14 +39,14 @@ class LaporanController extends Controller
 
     public function exportExcel(Request $request)
     {
-        $pelatihanId = $request->query('pelatihan_id');
-        $userId = $request->query('user_id');
-        $startDate = $request->query('start_date');
-        $endDate = $request->query('end_date');
+        $pelatihanId = $request->filled('pelatihan_id') ? (int) $request->query('pelatihan_id') : null;
+        $userId = $request->filled('user_id') ? (int) $request->query('user_id') : null;
+        $startDate = $request->filled('start_date') ? (string) $request->query('start_date') : null;
+        $endDate = $request->filled('end_date') ? (string) $request->query('end_date') : null;
 
         $reportData = $this->generateReportData($pelatihanId, $userId, $startDate, $endDate);
 
-        $filename = 'Laporan_Presensi_PKBM_' . now()->format('Ymd_His') . '.xlsx';
+        $filename = 'Laporan_Presensi_PKBM_'.now()->format('Ymd_His').'.xlsx';
 
         return Excel::download(
             new RekapPresensiExport($reportData['rekapPesertaRaw'], $reportData['detailSesiRaw']),
@@ -58,10 +56,10 @@ class LaporanController extends Controller
 
     public function exportPdf(Request $request)
     {
-        $pelatihanId = $request->query('pelatihan_id');
-        $userId = $request->query('user_id');
-        $startDate = $request->query('start_date');
-        $endDate = $request->query('end_date');
+        $pelatihanId = $request->filled('pelatihan_id') ? (int) $request->query('pelatihan_id') : null;
+        $userId = $request->filled('user_id') ? (int) $request->query('user_id') : null;
+        $startDate = $request->filled('start_date') ? (string) $request->query('start_date') : null;
+        $endDate = $request->filled('end_date') ? (string) $request->query('end_date') : null;
 
         $reportData = $this->generateReportData($pelatihanId, $userId, $startDate, $endDate);
 
@@ -76,7 +74,7 @@ class LaporanController extends Controller
             'generatedAt' => now()->translatedFormat('l, d F Y H:i:s'),
         ]))->setPaper('a4', 'landscape');
 
-        $filename = 'Laporan_Presensi_PKBM_' . now()->format('Ymd_His') . '.pdf';
+        $filename = 'Laporan_Presensi_PKBM_'.now()->format('Ymd_His').'.pdf';
 
         return $pdf->download($filename);
     }
@@ -85,8 +83,12 @@ class LaporanController extends Controller
     {
         // 1. Ambil pendaftaran yang relevan
         $pendaftaransQuery = Pendaftaran::with(['user', 'pelatihan.sesis' => function ($sq) use ($startDate, $endDate) {
-            if ($startDate) $sq->whereDate('tanggal', '>=', $startDate);
-            if ($endDate) $sq->whereDate('tanggal', '<=', $endDate);
+            if ($startDate) {
+                $sq->whereDate('tanggal', '>=', $startDate);
+            }
+            if ($endDate) {
+                $sq->whereDate('tanggal', '<=', $endDate);
+            }
             $sq->orderBy('tanggal', 'asc')->orderBy('jam_mulai', 'asc');
         }])
             ->where('status', 'disetujui')
@@ -103,6 +105,10 @@ class LaporanController extends Controller
         foreach ($pendaftarans as $pendaftaran) {
             $user = $pendaftaran->user;
             $pelatihan = $pendaftaran->pelatihan;
+            if (! $user || ! $pelatihan) {
+                continue;
+            }
+
             $sesis = $pelatihan->sesis;
             $sesiIds = $sesis->pluck('id');
 
@@ -162,19 +168,27 @@ class LaporanController extends Controller
         foreach ($detailPresensis as $p) {
             $lastAudit = $p->auditLogs->first();
             $catatanKoreksi = $lastAudit
-                ? "Koreksi oleh {$lastAudit->pelaku->nama} ({$lastAudit->created_at->format('d/m/Y H:i')}): {$lastAudit->alasan}"
-                : '-';
+                ? 'Koreksi oleh '.($lastAudit->pelaku?->nama ?? 'Tutor')." ({$lastAudit->created_at->format('d/m/Y H:i')}): {$lastAudit->alasan}"
+                : ($p->catatan ?: '-');
+
+            $jamSesi = '-';
+            if ($p->sesi) {
+                $jamMulai = substr((string) $p->sesi->jam_mulai, 0, 5);
+                $jamSelesai = substr((string) $p->sesi->jam_selesai, 0, 5);
+                $jamSesi = "{$jamMulai} - {$jamSelesai}";
+            }
 
             $item = [
-                'tanggal' => $p->sesi->tanggal->format('d/m/Y'),
-                'judul_sesi' => $p->sesi->judul_sesi,
-                'jam_sesi' => substr((string) $p->sesi->jam_mulai, 0, 5) . ' - ' . substr((string) $p->sesi->jam_selesai, 0, 5),
-                'lokasi' => $p->sesi->lokasi,
-                'nomor_induk' => $p->user->nomor_induk ?? '-',
-                'nama' => $p->user->nama,
-                'status' => strtoupper($p->status),
+                'tanggal' => $p->sesi?->tanggal ? $p->sesi->tanggal->format('d/m/Y') : '-',
+                'judul_sesi' => $p->sesi?->judul_sesi ?? '-',
+                'pelatihan' => $p->sesi?->pelatihan?->nama ?? '-',
+                'jam_sesi' => $jamSesi,
+                'lokasi' => $p->sesi?->lokasi ?? '-',
+                'nomor_induk' => $p->user?->nomor_induk ?? '-',
+                'nama' => $p->user?->nama ?? '-',
+                'status' => strtoupper($p->status ?? 'ALPA'),
                 'waktu_server' => $p->waktu_server ? $p->waktu_server->format('d/m/Y H:i:s') : '-',
-                'metode' => strtoupper($p->metode),
+                'metode' => strtoupper($p->metode ?? 'SISTEM'),
                 'catatan_koreksi' => $catatanKoreksi,
             ];
 

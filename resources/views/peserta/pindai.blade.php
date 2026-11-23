@@ -1,132 +1,178 @@
 <x-app-layout title="Pindai QR Presensi Sesi">
-    <div class="max-w-xl mx-auto space-y-6" x-data="qrScannerHandler()">
+    <div class="max-w-xl mx-auto flex flex-col gap-5" x-data="qrScannerHandler()">
 
-        <!-- Breadcrumb / Back -->
-        <a href="{{ route('peserta.dashboard') }}" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition">
-            &larr; Kembali ke Dashboard
-        </a>
+        <!-- Back Button -->
+        <div>
+            <a href="{{ route('peserta.dashboard') }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline">
+                <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                <span>Kembali ke Beranda</span>
+            </a>
+        </div>
 
-        <!-- Session Header Card -->
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5">
-            <div class="flex items-center justify-between gap-2 mb-2">
-                <span class="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-lg border border-blue-200">
-                    {{ $sesi->pelatihan->nama }}
+        <!-- 1. Sesi & Informasi Konteks Banner (Stitch Component 1) -->
+        <div class="w-full bg-surface-container-lowest rounded-2xl shadow-xs border border-outline-variant/30 p-5 flex flex-col gap-2">
+            <div class="flex items-center justify-between">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container text-xs font-bold">
+                    <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+                    Sesi Berlangsung
                 </span>
-                <span class="text-xs text-slate-500 font-medium">
-                    {{ $sesi->lokasi }}
-                </span>
+                <span class="text-xs text-on-surface-variant font-medium">{{ now()->translatedFormat('d M Y') }}</span>
             </div>
-            <h1 class="text-lg font-bold text-slate-900">{{ $sesi->judul_sesi }}</h1>
-            <div class="flex items-center gap-2 mt-2 text-xs text-slate-600">
-                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <span>{{ substr((string)$sesi->jam_mulai, 0, 5) }} - {{ substr((string)$sesi->jam_selesai, 0, 5) }} WIB</span>
-                <span class="text-slate-300">&bull;</span>
-                <span class="text-slate-500">Batas Terlambat: +{{ $sesi->batas_terlambat_menit }} mnt</span>
+            <div class="flex flex-col mt-0.5">
+                <span class="text-xs font-bold text-primary">{{ $sesi->pelatihan->nama }}</span>
+                <h2 class="text-lg font-bold text-on-surface tracking-tight">{{ $sesi->judul_sesi }}</h2>
+                <div class="flex items-center gap-2 text-on-surface-variant text-xs mt-1">
+                    <span class="material-symbols-outlined text-[16px] text-primary">location_on</span>
+                    <span>{{ $sesi->lokasi }} ({{ substr((string)$sesi->jam_mulai, 0, 5) }} - {{ substr((string)$sesi->jam_selesai, 0, 5) }} WIB)</span>
+                </div>
             </div>
         </div>
 
         @if($presensi)
             <!-- Already Attended Notice -->
-            <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center shadow-xs">
-                <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+            <div class="bg-surface-container-lowest border-2 border-secondary/40 rounded-2xl p-6 text-center shadow-xs">
+                <div class="w-14 h-14 rounded-2xl bg-secondary-container text-secondary flex items-center justify-center mx-auto mb-3">
+                    <span class="material-symbols-outlined text-[32px]">verified</span>
                 </div>
-                <h2 class="text-base font-bold text-emerald-900">Kehadiran Sudah Tercatat</h2>
-                <p class="text-xs text-emerald-700 mt-1">
-                    Status: <strong>{{ strtoupper($presensi->status) }}</strong> pada {{ $presensi->waktu_server->format('d/m/Y H:i:s') }} (Metode: {{ $presensi->metode }}).
+                <h2 class="text-lg font-bold text-on-surface">Presensi Anda Sudah Tercatat!</h2>
+                <p class="text-xs text-on-surface-variant mt-1.5 leading-relaxed">
+                    Status kehadiran: <strong class="text-secondary uppercase">{{ $presensi->status }}</strong> pada {{ $presensi->waktu_server->format('d/m/Y H:i:s') }} WIB (Metode: {{ $presensi->metode }}).
                 </p>
-                <a href="{{ route('peserta.dashboard') }}" class="inline-block mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-xs transition">
-                    Kembali ke Dashboard
-                </a>
+                <div class="mt-5">
+                    <a href="{{ route('peserta.dashboard') }}" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary text-on-primary font-bold text-xs rounded-xl shadow-xs transition">
+                        <span>Kembali ke Beranda</span>
+                    </a>
+                </div>
             </div>
         @elseif($isBeforeWindow)
-            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center shadow-xs">
-                <div class="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-3">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-6 text-center shadow-xs">
+                <div class="w-14 h-14 rounded-2xl bg-surface-container text-on-surface-variant flex items-center justify-center mx-auto mb-3">
+                    <span class="material-symbols-outlined text-[32px]">schedule</span>
                 </div>
-                <h2 class="text-base font-bold text-amber-900">Presensi Belum Dibuka</h2>
-                <p class="text-xs text-amber-700 mt-1">
-                    Jendela presensi baru dibuka 15 menit sebelum kelas dimulai (pukul <strong>{{ $sesi->window_buka->format('H:i') }} WIB</strong>). Silakan tunggu arahan Tutor.
+                <h2 class="text-base font-bold text-on-surface">Presensi Belum Dibuka</h2>
+                <p class="text-xs text-on-surface-variant mt-1.5 mb-5 leading-relaxed">
+                    Jendela presensi baru dibuka 15 menit sebelum kelas dimulai (pukul <strong>{{ $sesi->window_buka->format('H:i') }} WIB</strong>).
                 </p>
+                <button type="button" onclick="window.location.reload()" class="px-5 py-2.5 bg-surface-container hover:bg-surface-container-high text-on-surface font-bold text-xs rounded-xl border border-outline-variant/30 transition">
+                    Muat Ulang Halaman
+                </button>
             </div>
         @elseif($isAfterWindow)
-            <div class="bg-rose-50 border border-rose-200 rounded-2xl p-6 text-center shadow-xs">
-                <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-3">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            <div class="bg-surface-container-lowest border border-error/30 rounded-2xl p-6 text-center shadow-xs">
+                <div class="w-14 h-14 rounded-2xl bg-error-container text-error flex items-center justify-center mx-auto mb-3">
+                    <span class="material-symbols-outlined text-[32px]">timer_off</span>
                 </div>
-                <h2 class="text-base font-bold text-rose-900">Presensi Sesi Ditutup</h2>
-                <p class="text-xs text-rose-700 mt-1">
-                    Jam selesai sesi telah berakhir (pukul {{ $sesi->waktu_selesai->format('H:i') }} WIB). Peserta yang belum presensi tercatat otomatis sebagai Alpa. Hubungi Tutor jika ada kendala.
+                <h2 class="text-base font-bold text-on-surface">Jam Sesi Telah Berakhir</h2>
+                <p class="text-xs text-on-surface-variant mt-1.5 mb-5 leading-relaxed">
+                    Waktu presensi untuk sesi ini telah ditutup (pukul {{ $sesi->waktu_selesai->format('H:i') }} WIB). Jika tutor baru saja membuka sesi kembali, silakan muat ulang.
                 </p>
+                <button type="button" onclick="window.location.reload()" class="px-5 py-2.5 bg-primary text-on-primary font-bold text-xs rounded-xl transition">
+                    Periksa Ulang Sesi
+                </button>
             </div>
         @else
-            <!-- Scanner Card (FR-06) -->
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-                <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-                        <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Pemindai Kamera QR</h2>
-                    </div>
-                    <span class="text-[11px] text-slate-500">Arahkan ke layar tutor</span>
-                </div>
+            <!-- 2. Interactive Camera Viewfinder Panel (Stitch Component 2) -->
+            <div class="w-full bg-inverse-surface rounded-2xl overflow-hidden shadow-xl flex flex-col relative text-surface">
+                
+                <!-- Viewport Box -->
+                <div class="relative w-full h-[320px] bg-slate-950 flex flex-col items-center justify-center overflow-hidden">
+                    <!-- Live Camera Reader Target -->
+                    <div id="reader" class="w-full h-full object-cover"></div>
 
-                <div class="p-4 sm:p-6 text-center">
-                    
-                    <!-- Viewport Kamera -->
-                    <div class="relative bg-slate-900 rounded-2xl overflow-hidden aspect-square max-w-xs mx-auto flex items-center justify-center shadow-inner">
-                        <div id="reader" class="w-full h-full"></div>
+                    <!-- Overlay when camera is NOT running yet -->
+                    <div x-show="!isScanning" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-slate-950/90 z-20">
+                        <!-- Reticle with neon corner markers -->
+                        <div class="relative w-48 h-48 flex items-center justify-center mb-4">
+                            <!-- Corners -->
+                            <div class="absolute top-0 left-0 w-6 h-6 border-t-3 border-l-3 border-secondary-fixed rounded-tl-lg"></div>
+                            <div class="absolute top-0 right-0 w-6 h-6 border-t-3 border-r-3 border-secondary-fixed rounded-tr-lg"></div>
+                            <div class="absolute bottom-0 left-0 w-6 h-6 border-b-3 border-l-3 border-secondary-fixed rounded-bl-lg"></div>
+                            <div class="absolute bottom-0 right-0 w-6 h-6 border-b-3 border-r-3 border-secondary-fixed rounded-br-lg"></div>
 
-                        <div x-show="!isScanning" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-white text-center bg-slate-900/90 z-10">
-                            <div class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-3">
-                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                            </div>
-                            <p class="text-xs font-medium text-slate-300 mb-4">Kamera belum aktif. Klik tombol di bawah untuk mengaktifkan kamera ponsel.</p>
-                            <button type="button" @click="startScanner()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition cursor-pointer">
-                                Buka Kamera Belakang
+                            <span class="material-symbols-outlined text-[48px] text-surface-variant/40">qr_code_scanner</span>
+                        </div>
+
+                        <p class="text-xs text-surface-variant mb-4">Arahkan kamera ke layar QR proyektor untuk presensi instan.</p>
+
+                        <div class="flex flex-col gap-2.5 w-full max-w-xs">
+                            <button type="button" @click="startScanner()"
+                                    class="w-full py-3 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                                <span class="material-symbols-outlined text-[20px]">videocam</span>
+                                <span>Buka Kamera Pemindai</span>
                             </button>
+
+                            <label class="w-full py-2.5 bg-white/10 hover:bg-white/20 text-surface text-xs font-semibold rounded-xl border border-white/20 transition flex items-center justify-center gap-2 cursor-pointer">
+                                <span class="material-symbols-outlined text-[18px]">photo_camera</span>
+                                <span>Unggah Foto / Screenshot QR</span>
+                                <input type="file" accept="image/*" @change="onFileSelected($event)" class="hidden">
+                            </label>
                         </div>
                     </div>
 
-                    <div x-show="isScanning" class="mt-4 flex items-center justify-center gap-2">
-                        <button type="button" @click="stopScanner()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition">
+                    <!-- Floating scanning guide overlay when active -->
+                    <div x-show="isScanning" class="absolute bottom-3 left-0 right-0 px-4 text-center z-20 pointer-events-none">
+                        <span class="text-[11px] font-semibold text-surface-variant bg-inverse-surface/85 backdrop-blur-md py-1 px-3 rounded-full inline-block">
+                            Posisikan kode QR di dalam area pemindai
+                        </span>
+                    </div>
+
+                    <!-- Close camera button when active -->
+                    <div x-show="isScanning" class="absolute top-3 right-3 z-30">
+                        <button type="button" @click="stopScanner()" class="px-3 py-1.5 bg-inverse-surface/80 backdrop-blur-md text-surface hover:bg-inverse-surface text-xs font-bold rounded-lg border border-white/20 transition">
                             Hentikan Kamera
                         </button>
                     </div>
-
-                    <p x-show="errorMessage" x-text="errorMessage" class="text-xs text-rose-600 font-medium mt-3"></p>
                 </div>
 
-                <!-- Hidden form for QR scan auto-submission -->
-                <form id="qrSubmitForm" method="POST" action="{{ route('peserta.presensi.submit') }}">
+                <!-- Subtext Instructions -->
+                <div class="p-4 bg-inverse-surface flex items-start gap-3 border-t border-white/10">
+                    <span class="material-symbols-outlined text-[24px] text-secondary-fixed shrink-0">center_focus_strong</span>
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-surface">Arahkan Kamera ke Layar</span>
+                        <span class="text-xs text-surface-container-high leading-relaxed mt-0.5">
+                            Sistem akan otomatis mendeteksi kode QR yang ditampilkan tutor dan mencatat kehadiran Anda.
+                        </span>
+                    </div>
+                </div>
+
+                <div x-show="errorMessage" class="p-3 bg-error text-on-error text-xs font-semibold text-center" x-text="errorMessage"></div>
+            </div>
+
+            <!-- Hidden auto-submit form -->
+            <form id="qrSubmitForm" method="POST" action="{{ route('peserta.presensi.submit') }}">
+                @csrf
+                <input type="hidden" name="sesi_id" value="{{ $sesi->id }}">
+                <input type="hidden" name="token" id="qrTokenInput">
+            </form>
+
+            <!-- 3. Fallback: 6-Digit Manual Code Card (Stitch Component 3) -->
+            <div class="w-full bg-surface-container rounded-2xl p-5 shadow-xs border border-outline-variant/30 flex flex-col gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-tertiary-fixed text-tertiary flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-[22px]">pin</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <h3 class="text-sm font-bold text-on-surface">Kamera bermasalah atau sinyal lambat?</h3>
+                        <p class="text-xs text-on-surface-variant">Gunakan 6 digit kode manual yang tertera di bawah QR pada layar Tutor.</p>
+                    </div>
+                </div>
+
+                <form method="POST" action="{{ route('peserta.presensi.submit') }}" class="flex flex-col gap-3">
                     @csrf
                     <input type="hidden" name="sesi_id" value="{{ $sesi->id }}">
-                    <input type="hidden" name="token" id="qrTokenInput">
-                </form>
 
-                <!-- Alternative: 6-Digit Manual Code Input (FR-06) -->
-                <div class="p-5 sm:p-6 bg-slate-50 border-t border-slate-200">
-                    <div class="text-center mb-3">
-                        <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Alternatif: Kode Manual Sesi</span>
-                        <p class="text-[11px] text-slate-500">Gunakan jika kamera bermasalah atau buram.</p>
+                    <div class="relative">
+                        <input type="text" name="kode_manual" maxlength="6" required autocomplete="off"
+                               class="w-full text-center tracking-[0.4em] font-mono font-extrabold text-2xl py-3 bg-surface-container-lowest border-2 border-outline-variant/40 rounded-xl uppercase focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition"
+                               placeholder="XXXXXX">
                     </div>
 
-                    <form method="POST" action="{{ route('peserta.presensi.submit') }}" class="max-w-xs mx-auto space-y-3">
-                        @csrf
-                        <input type="hidden" name="sesi_id" value="{{ $sesi->id }}">
-
-                        <div class="relative">
-                            <input type="text" name="kode_manual" maxlength="6" required
-                                   class="w-full text-center tracking-[0.4em] font-mono font-black text-xl py-2.5 bg-white border-2 border-slate-300 rounded-xl uppercase focus:border-blue-600 focus:ring-0 focus:outline-hidden"
-                                   placeholder="XXXXXX">
-                        </div>
-
-                        <button type="submit"
-                                class="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow-xs transition cursor-pointer">
-                            Kirim Kode Presensi
-                        </button>
-                    </form>
-                </div>
-
+                    <button type="submit"
+                            class="w-full py-3 px-4 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-2 cursor-pointer">
+                        <span class="material-symbols-outlined text-[18px]">send</span>
+                        <span>Kirim Kode Manual</span>
+                    </button>
+                </form>
             </div>
         @endif
 
@@ -140,47 +186,78 @@
                 html5QrCode: null,
                 errorMessage: '',
 
-                startScanner() {
+                async startScanner() {
                     this.errorMessage = '';
                     if (!window.Html5Qrcode) {
                         this.errorMessage = 'Library pemindai QR belum selesai dimuat. Silakan muat ulang halaman.';
                         return;
                     }
 
-                    this.html5QrCode = new window.Html5Qrcode("reader");
-                    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-                    // Prefer back camera (environment)
-                    this.html5QrCode.start(
-                        { facingMode: "environment" },
-                        config,
-                        (decodedText) => {
-                            // On Success Scan: Stop scanner and submit form
-                            this.html5QrCode.stop().then(() => {
-                                this.isScanning = false;
-                                document.getElementById('qrTokenInput').value = decodedText;
-                                document.getElementById('qrSubmitForm').submit();
-                            }).catch(() => {
-                                document.getElementById('qrTokenInput').value = decodedText;
-                                document.getElementById('qrSubmitForm').submit();
-                            });
-                        },
-                        (error) => {
-                            // Scan error (frame didn't contain QR, ignore for continuous scan)
+                    try {
+                        if (!this.html5QrCode) {
+                            this.html5QrCode = new window.Html5Qrcode("reader");
                         }
-                    ).then(() => {
+
+                        const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+
+                        await this.html5QrCode.start(
+                            { facingMode: "environment" },
+                            config,
+                            (decodedText) => this.onScanSuccess(decodedText),
+                            (error) => {}
+                        );
+
                         this.isScanning = true;
-                    }).catch((err) => {
-                        this.isScanning = false;
-                        this.errorMessage = 'Izin kamera ditolak atau perangkat tidak memiliki kamera yang kompatibel. Gunakan Kode Manual 6-Digit di bawah.';
-                    });
+                    } catch (err) {
+                        try {
+                            await this.html5QrCode.start(
+                                { facingMode: "user" },
+                                { fps: 10, qrbox: { width: 220, height: 220 } },
+                                (decodedText) => this.onScanSuccess(decodedText),
+                                (error) => {}
+                            );
+                            this.isScanning = true;
+                        } catch (fallbackErr) {
+                            this.isScanning = false;
+                            this.errorMessage = 'Izin kamera ditolak atau tidak tersedia. Silakan gunakan tombol Unggah Foto QR atau masukkan Kode Manual 6-Digit di bawah.';
+                        }
+                    }
+                },
+
+                onScanSuccess(decodedText) {
+                    if (this.html5QrCode && this.isScanning) {
+                        this.html5QrCode.stop().catch(() => {}).finally(() => {
+                            this.isScanning = false;
+                            document.getElementById('qrTokenInput').value = decodedText;
+                            document.getElementById('qrSubmitForm').submit();
+                        });
+                    } else {
+                        document.getElementById('qrTokenInput').value = decodedText;
+                        document.getElementById('qrSubmitForm').submit();
+                    }
+                },
+
+                async onFileSelected(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    this.errorMessage = '';
+                    try {
+                        if (!this.html5QrCode) {
+                            this.html5QrCode = new window.Html5Qrcode("reader");
+                        }
+                        const decodedText = await this.html5QrCode.scanFile(file, true);
+                        this.onScanSuccess(decodedText);
+                    } catch (err) {
+                        this.errorMessage = 'Kode QR tidak terbaca pada file gambar. Pastikan gambar jelas atau gunakan Kode Manual.';
+                    }
                 },
 
                 stopScanner() {
                     if (this.html5QrCode && this.isScanning) {
                         this.html5QrCode.stop().then(() => {
                             this.isScanning = false;
-                        });
+                        }).catch(() => {});
                     }
                 }
             }

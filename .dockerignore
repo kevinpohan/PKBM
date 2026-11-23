@@ -1,0 +1,10 @@
+.git
+.github
+node_modules
+tests
+storage/*.key
+.env
+.env.example
+.env.*
+.phpunit.result.cache
+*.log

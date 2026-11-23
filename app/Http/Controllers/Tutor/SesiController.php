@@ -8,57 +8,71 @@ use App\Models\Pendaftaran;
 use App\Models\Presensi;
 use App\Models\Sesi;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class SesiController extends Controller
 {
-    public function create(Pelatihan $pelatihan)
+    public function create(?Pelatihan $pelatihan = null)
     {
-        return view('tutor.sesi.create', compact('pelatihan'));
+        $pelatihans = Pelatihan::where('status', 'aktif')->orderBy('nama')->get();
+
+        return view('tutor.sesi.create', compact('pelatihans', 'pelatihan'));
     }
 
-    public function store(Request $request, Pelatihan $pelatihan)
+    public function store(Request $request, ?Pelatihan $pelatihan = null)
     {
+        $pelatihanId = $pelatihan ? $pelatihan->id : $request->input('pelatihan_id');
+
         $validated = $request->validate([
-            'judul_sesi' => ['required', 'string', 'max:255'],
-            'tanggal' => ['required', 'date'],
-            'jam_mulai' => ['required'],
-            'jam_selesai' => ['required', 'after:jam_mulai'],
-            'batas_terlambat_menit' => ['required', 'integer', 'min:0', 'max:180'],
-            'lokasi' => ['required', 'string', 'max:255'],
+            'pelatihan_id' => $pelatihan ? 'nullable' : 'required|exists:pelatihans,id',
+            'judul_sesi' => 'required|string|max:255',
+            'tanggal' => 'required|date',
+            'jam_mulai' => 'required|date_format:H:i',
+            'jam_selesai' => 'required|date_format:H:i|after:jam_mulai',
+            'batas_terlambat_menit' => 'nullable|integer|min:0|max:180',
+            'lokasi' => 'required|string|max:255',
         ]);
 
-        $validated['pelatihan_id'] = $pelatihan->id;
+        $validated['pelatihan_id'] = $pelatihanId;
+        $validated['batas_terlambat_menit'] = $validated['batas_terlambat_menit'] ?? 15;
+        $validated['qr_token'] = Str::random(40);
+        $validated['kode_manual'] = strtoupper(Str::random(6));
+        $validated['token_expired_at'] = now()->addMinutes(5);
+        $validated['is_finalized'] = false;
 
         $sesi = Sesi::create($validated);
-        // Inisialisasi token pertama
-        $sesi->rotateTokenIfNeeded(true);
 
-        return redirect()->route('tutor.pelatihan.show', $pelatihan)
-            ->with('success', "Sesi '{$sesi->judul_sesi}' berhasil ditambahkan.");
+        return redirect()->route('tutor.pelatihan.show', $pelatihanId)
+            ->with('success', "Sesi '{$sesi->judul_sesi}' berhasil dibuat!");
     }
 
     public function edit(Sesi $sesi)
     {
-        $sesi->load('pelatihan');
-        return view('tutor.sesi.edit', compact('sesi'));
+        $pelatihans = Pelatihan::where('status', 'aktif')->orderBy('nama')->get();
+
+        return view('tutor.sesi.edit', compact('sesi', 'pelatihans'));
     }
 
     public function update(Request $request, Sesi $sesi)
     {
         $validated = $request->validate([
-            'judul_sesi' => ['required', 'string', 'max:255'],
-            'tanggal' => ['required', 'date'],
-            'jam_mulai' => ['required'],
-            'jam_selesai' => ['required', 'after:jam_mulai'],
-            'batas_terlambat_menit' => ['required', 'integer', 'min:0', 'max:180'],
-            'lokasi' => ['required', 'string', 'max:255'],
+            'pelatihan_id' => 'nullable|exists:pelatihans,id',
+            'judul_sesi' => 'required|string|max:255',
+            'tanggal' => 'required|date',
+            'jam_mulai' => 'required|date_format:H:i',
+            'jam_selesai' => 'required|date_format:H:i|after:jam_mulai',
+            'batas_terlambat_menit' => 'nullable|integer|min:0|max:180',
+            'lokasi' => 'required|string|max:255',
         ]);
+
+        $validated['pelatihan_id'] = $request->input('pelatihan_id', $sesi->pelatihan_id) ?: $sesi->pelatihan_id;
+        $validated['batas_terlambat_menit'] = $validated['batas_terlambat_menit'] ?? 15;
 
         $sesi->update($validated);
 
         return redirect()->route('tutor.pelatihan.show', $sesi->pelatihan_id)
-            ->with('success', "Sesi '{$sesi->judul_sesi}' berhasil diperbarui.");
+            ->with('success', "Sesi '{$sesi->judul_sesi}' berhasil diperbarui!");
     }
 
     public function destroy(Sesi $sesi)
@@ -72,6 +86,26 @@ class SesiController extends Controller
     }
 
     /**
+     * Buka presensi sesi langsung ke waktu sekarang
+     */
+    public function activateNow(Sesi $sesi)
+    {
+        $sesi->bukaSekarang();
+
+        return back()->with('success', "Presensi Sesi '{$sesi->judul_sesi}' berhasil dibuka sekarang! Jam sesi diperbarui menjadi ".substr((string) $sesi->jam_mulai, 0, 5).' - '.substr((string) $sesi->jam_selesai, 0, 5).' WIB.');
+    }
+
+    /**
+     * FR-10: Tutup sesi secara manual & catat otomatis status Alpa bagi peserta yang belum absen
+     */
+    public function finalize(Sesi $sesi)
+    {
+        $count = $sesi->finalizeAlpa(true);
+
+        return back()->with('success', "Sesi '{$sesi->judul_sesi}' berhasil ditutup & difinalisasi! Sebanyak {$count} warga belajar otomatis dicatat Alpa.");
+    }
+
+    /**
      * FR-11: Halaman QR Fullscreen dengan rotasi tiap 5 menit + grace period 15 detik
      */
     public function qrFullscreen(Sesi $sesi)
@@ -79,10 +113,16 @@ class SesiController extends Controller
         $sesi->load('pelatihan.tutor');
         $sesi->rotateTokenIfNeeded();
 
-        $qrSvg = QrCode::size(340)->generate($sesi->qr_token);
+        $qrUrl = $sesi->qr_url;
+        $qrSvg = QrCode::size(340)->generate($qrUrl);
         $remainingSeconds = $sesi->remainingSeconds();
+        $isWithinWindow = $sesi->isWithinAttendanceWindow();
+        $liveData = $this->getLiveDataArray($sesi);
 
-        return view('tutor.sesi.qr', compact('sesi', 'qrSvg', 'remainingSeconds'));
+        return view('tutor.sesi.qr', array_merge(
+            compact('sesi', 'qrSvg', 'qrUrl', 'remainingSeconds', 'isWithinWindow'),
+            $liveData
+        ));
     }
 
     /**
@@ -91,36 +131,44 @@ class SesiController extends Controller
     public function tokenStatus(Sesi $sesi)
     {
         $rotated = $sesi->rotateTokenIfNeeded();
-        $qrSvg = (string) QrCode::size(340)->generate($sesi->qr_token);
+        $remainingSeconds = $sesi->remainingSeconds();
+
+        $qrUrl = $sesi->qr_url;
+        $qrSvg = QrCode::size(340)->generate($qrUrl);
 
         return response()->json([
+            'rotated' => $rotated,
             'qr_token' => $sesi->qr_token,
             'kode_manual' => $sesi->kode_manual,
-            'remaining_seconds' => $sesi->remainingSeconds(),
-            'rotated' => $rotated,
-            'qr_svg' => $qrSvg,
+            'qr_url' => $qrUrl,
+            'qr_svg' => (string) $qrSvg,
+            'remaining_seconds' => $remainingSeconds,
+            'is_within_window' => $sesi->isWithinAttendanceWindow(),
+            'expired_at' => $sesi->token_expired_at ? $sesi->token_expired_at->toIso8601String() : null,
         ]);
     }
 
     /**
-     * API JSON untuk paksa rotasi token sekarang
+     * Endpoint untuk memaksa rotasi token sekarang
      */
     public function rotateToken(Sesi $sesi)
     {
         $sesi->rotateTokenIfNeeded(true);
-        $qrSvg = (string) QrCode::size(340)->generate($sesi->qr_token);
+        $qrUrl = $sesi->qr_url;
+        $qrSvg = QrCode::size(340)->generate($qrUrl);
 
         return response()->json([
             'success' => true,
             'qr_token' => $sesi->qr_token,
             'kode_manual' => $sesi->kode_manual,
+            'qr_url' => $qrUrl,
+            'qr_svg' => (string) $qrSvg,
             'remaining_seconds' => $sesi->remainingSeconds(),
-            'qr_svg' => $qrSvg,
         ]);
     }
 
     /**
-     * FR-12: Layar Pemantauan Live Presensi Sesi
+     * FR-12: Halaman Pemantauan Live Presensi
      */
     public function live(Sesi $sesi)
     {
@@ -137,11 +185,18 @@ class SesiController extends Controller
     public function liveData(Sesi $sesi)
     {
         $data = $this->getLiveDataArray($sesi);
+
         return response()->json($data);
     }
 
     private function getLiveDataArray(Sesi $sesi): array
     {
+        // Jika sesi sudah melewati waktu selesai dan belum difinalisasi, jalankan finalisasi otomatis (FR-10)
+        if (! $sesi->is_finalized && now()->greaterThanOrEqualTo($sesi->waktu_selesai)) {
+            $sesi->finalizeAlpa();
+            $sesi->refresh();
+        }
+
         // Ambil seluruh peserta terdaftar yang disetujui pada pelatihan
         $approvedPesertas = Pendaftaran::with('user')
             ->where('pelatihan_id', $sesi->pelatihan_id)
@@ -164,12 +219,19 @@ class SesiController extends Controller
             $presensi = $presensis->get($user->id);
             $status = $presensi ? $presensi->status : 'belum_absen';
 
-            if ($status === 'hadir') $countHadir++;
-            elseif ($status === 'terlambat') $countTerlambat++;
-            elseif ($status === 'izin') $countIzin++;
-            elseif ($status === 'sakit') $countSakit++;
-            elseif ($status === 'alpa') $countAlpa++;
-            else $countBelumAbsen++;
+            if ($status === 'hadir') {
+                $countHadir++;
+            } elseif ($status === 'terlambat') {
+                $countTerlambat++;
+            } elseif ($status === 'izin') {
+                $countIzin++;
+            } elseif ($status === 'sakit') {
+                $countSakit++;
+            } elseif ($status === 'alpa') {
+                $countAlpa++;
+            } else {
+                $countBelumAbsen++;
+            }
 
             $attendees[] = [
                 'user_id' => $user->id,
@@ -199,6 +261,7 @@ class SesiController extends Controller
             'ratio' => $ratio,
             'attendees' => $attendees,
             'last_updated' => now()->format('H:i:s'),
+            'is_finalized' => (bool) $sesi->is_finalized,
         ];
     }
 }

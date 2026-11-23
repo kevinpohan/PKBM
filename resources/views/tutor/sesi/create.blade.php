@@ -1,74 +1,118 @@
 <x-app-layout title="Tambah Sesi Baru">
-    <div class="max-w-2xl mx-auto space-y-6">
+    <div class="max-w-2xl mx-auto flex flex-col gap-6">
 
-        <a href="{{ route('tutor.pelatihan.show', $pelatihan) }}" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition">
-            &larr; Kembali ke Pelatihan: {{ $pelatihan->nama }}
-        </a>
+        @if($pelatihan && $pelatihan->exists)
+            <a href="{{ route('tutor.pelatihan.show', $pelatihan) }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline">
+                <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                <span>Kembali ke Pelatihan: {{ $pelatihan->nama }}</span>
+            </a>
+        @else
+            <a href="{{ route('tutor.dashboard') }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline">
+                <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                <span>Kembali ke Dashboard Utama</span>
+            </a>
+        @endif
 
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6">
-            <h1 class="text-lg font-bold text-slate-900 mb-1">Tambah Sesi Pembelajaran Baru</h1>
-            <p class="text-xs text-slate-500 mb-6">Jadwalkan pertemuan kelas, jam presensi, dan lokasi ruangan.</p>
+        <div class="bg-surface-container-lowest rounded-3xl border border-outline-variant/30 shadow-xs p-6 sm:p-8">
+            <div class="flex items-center gap-3 pb-4 border-b border-outline-variant/20 mb-6">
+                <div class="w-10 h-10 rounded-2xl bg-primary-fixed text-primary flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[22px]">add_circle</span>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-extrabold text-on-surface">Tambah Sesi Pembelajaran Baru</h1>
+                    <p class="text-xs text-on-surface-variant">Jadwalkan pertemuan kelas, jam presensi, dan lokasi ruangan belajar.</p>
+                </div>
+            </div>
 
-            <form method="POST" action="{{ route('tutor.pelatihan.sesi.store', $pelatihan) }}" class="space-y-4">
+            <form method="POST" action="{{ route('tutor.sesi.store') }}" class="space-y-4">
                 @csrf
 
-                <div>
-                    <label for="judul_sesi" class="block text-xs font-semibold text-slate-700 mb-1">Judul / Materi Sesi <span class="text-rose-500">*</span></label>
+                <div class="flex flex-col gap-1.5">
+                    <label for="pelatihan_id" class="text-xs font-bold text-on-surface flex items-center justify-between">
+                        <span>Program Pelatihan</span>
+                        <span class="text-error text-[11px] font-semibold">* Wajib</span>
+                    </label>
+                    <select id="pelatihan_id" name="pelatihan_id" required
+                            class="w-full px-3.5 py-2.5 bg-surface-container-low border border-outline-variant/40 rounded-xl text-xs text-on-surface font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
+                        @if(isset($pelatihans) && $pelatihans->isNotEmpty())
+                            @foreach($pelatihans as $p)
+                                <option value="{{ $p->id }}" {{ old('pelatihan_id', $pelatihan?->id) == $p->id ? 'selected' : '' }}>
+                                    {{ $p->nama }} ({{ $p->kategori }})
+                                </option>
+                            @endforeach
+                        @elseif($pelatihan)
+                            <option value="{{ $pelatihan->id }}" selected>{{ $pelatihan->nama }}</option>
+                        @endif
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                    <label for="judul_sesi" class="text-xs font-bold text-on-surface flex items-center justify-between">
+                        <span>Judul / Materi Sesi</span>
+                        <span class="text-error text-[11px] font-semibold">* Wajib</span>
+                    </label>
                     <input type="text" id="judul_sesi" name="judul_sesi" value="{{ old('judul_sesi') }}" required
-                           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
-                           placeholder="Contoh: Modul 3 — Pembagian Sel Mitosis & Meiosis">
+                           class="w-full px-3.5 py-2.5 bg-surface-container-low border border-outline-variant/40 rounded-xl text-xs text-on-surface placeholder:text-outline focus:ring-2 focus:ring-primary focus:outline-none"
+                           placeholder="Contoh: Modul 1 — Pengantar Desain Grafis & Vektor">
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                        <label for="tanggal" class="block text-xs font-semibold text-slate-700 mb-1">Tanggal Kelas <span class="text-rose-500">*</span></label>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="tanggal" class="text-xs font-bold text-on-surface">Tanggal Kelas <span class="text-error">*</span></label>
                         <input type="date" id="tanggal" name="tanggal" value="{{ old('tanggal', now()->toDateString()) }}" required
-                               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-blue-600">
+                               class="w-full px-3.5 py-2.5 bg-surface-container-low border border-outline-variant/40 rounded-xl text-xs text-on-surface font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
                     </div>
 
-                    <div>
-                        <label for="jam_mulai" class="block text-xs font-semibold text-slate-700 mb-1">Jam Mulai <span class="text-rose-500">*</span></label>
-                        <input type="time" id="jam_mulai" name="jam_mulai" value="{{ old('jam_mulai', '08:00') }}" required
-                               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-blue-600">
+                    <div class="flex flex-col gap-1.5">
+                        <label for="jam_mulai" class="text-xs font-bold text-on-surface">Jam Mulai <span class="text-error">*</span></label>
+                        <input type="time" id="jam_mulai" name="jam_mulai" value="{{ old('jam_mulai', now()->subMinutes(5)->format('H:i')) }}" required
+                               class="w-full px-3.5 py-2.5 bg-surface-container-low border border-outline-variant/40 rounded-xl text-xs text-on-surface font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
                     </div>
 
-                    <div>
-                        <label for="jam_selesai" class="block text-xs font-semibold text-slate-700 mb-1">Jam Selesai <span class="text-rose-500">*</span></label>
-                        <input type="time" id="jam_selesai" name="jam_selesai" value="{{ old('jam_selesai', '10:00') }}" required
-                               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-blue-600">
+                    <div class="flex flex-col gap-1.5">
+                        <label for="jam_selesai" class="text-xs font-bold text-on-surface">Jam Selesai <span class="text-error">*</span></label>
+                        <input type="time" id="jam_selesai" name="jam_selesai" value="{{ old('jam_selesai', now()->addHours(2)->format('H:i')) }}" required
+                               class="w-full px-3.5 py-2.5 bg-surface-container-low border border-outline-variant/40 rounded-xl text-xs text-on-surface font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label for="batas_terlambat_menit" class="block text-xs font-semibold text-slate-700 mb-1">Toleransi Terlambat (Menit) <span class="text-rose-500">*</span></label>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="batas_terlambat_menit" class="text-xs font-bold text-on-surface">Toleransi Terlambat (Menit) <span class="text-error">*</span></label>
                         <input type="number" id="batas_terlambat_menit" name="batas_terlambat_menit" value="{{ old('batas_terlambat_menit', 15) }}" min="0" max="180" required
-                               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-blue-600">
-                        <span class="text-[10px] text-slate-400 mt-1 block">Presensi setelah (Jam Mulai + Toleransi) otomatis berstatus Terlambat.</span>
+                               class="w-full px-3.5 py-2.5 bg-surface-container-low border border-outline-variant/40 rounded-xl text-xs text-on-surface font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
+                        <span class="text-[11px] text-on-surface-variant">Setelah (Jam Mulai + Toleransi) otomatis berstatus Terlambat.</span>
                     </div>
 
-                    <div>
-                        <label for="lokasi" class="block text-xs font-semibold text-slate-700 mb-1">Lokasi / Ruangan <span class="text-rose-500">*</span></label>
-                        <input type="text" id="lokasi" name="lokasi" value="{{ old('lokasi', 'Ruang Kelas 1 PKBM') }}" required
-                               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-blue-600"
-                               placeholder="Contoh: Lab Komputer Lt. 2">
+                    <div class="flex flex-col gap-1.5">
+                        <label for="lokasi" class="text-xs font-bold text-on-surface">Lokasi / Ruangan <span class="text-error">*</span></label>
+                        <input type="text" id="lokasi" name="lokasi" value="{{ old('lokasi', 'Lab Komputer 1 PKBM Karawang') }}" required
+                               class="w-full px-3.5 py-2.5 bg-surface-container-low border border-outline-variant/40 rounded-xl text-xs text-on-surface placeholder:text-outline focus:ring-2 focus:ring-primary focus:outline-none"
+                               placeholder="Contoh: Lab Komputer 1">
                     </div>
                 </div>
 
-                <div class="p-4 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-800 space-y-1">
-                    <div class="font-bold">Ketentuan Jendela Waktu Presensi (FR-08, FR-11):</div>
-                    <ul class="list-disc list-inside text-[11px] text-blue-700 space-y-0.5">
-                        <li>Presensi dibuka otomatis 15 menit sebelum jam mulai hingga jam selesai sesi.</li>
-                        <li>Token QR layar penuh akan otomatis berganti setiap 5 menit dengan masa tenggang jeda 15 detik.</li>
+                <div class="p-4 rounded-2xl bg-surface-container-low border border-outline-variant/30 text-xs text-on-surface space-y-1.5">
+                    <div class="font-bold text-primary flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[18px]">info</span>
+                        <span>Ketentuan Jendela Waktu Presensi:</span>
+                    </div>
+                    <ul class="list-disc list-inside text-[11px] text-on-surface-variant space-y-0.5">
+                        <li>Presensi dibuka otomatis mulai 15 menit sebelum jam mulai hingga jam selesai sesi.</li>
+                        <li>Token QR layar penuh akan otomatis diperbarui setiap 5 menit dengan toleransi jeda 15 detik.</li>
+                        <li>Peserta dapat scan langsung dari kamera HP atau memasukkan kode manual 6-digit.</li>
                     </ul>
                 </div>
 
-                <div class="pt-4 flex justify-end gap-2 border-t border-slate-100">
-                    <a href="{{ route('tutor.pelatihan.show', $pelatihan) }}" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition">
+                <div class="pt-4 flex justify-end gap-2.5 border-t border-outline-variant/20">
+                    <a href="{{ $pelatihan && $pelatihan->exists ? route('tutor.pelatihan.show', $pelatihan) : route('tutor.dashboard') }}"
+                       class="px-4 py-2.5 bg-surface-container hover:bg-surface-container-high text-on-surface font-bold text-xs rounded-xl transition">
                         Batal
                     </a>
-                    <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-xs transition cursor-pointer">
-                        Simpan Sesi
+                    <button type="submit"
+                            class="px-5 py-2.5 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer">
+                        <span class="material-symbols-outlined text-[18px]">save</span>
+                        <span>Simpan & Buat Sesi</span>
                     </button>
                 </div>
             </form>

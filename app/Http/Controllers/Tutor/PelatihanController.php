@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Tutor;
 use App\Http\Controllers\Controller;
 use App\Models\Pelatihan;
 use App\Models\Pendaftaran;
+use App\Models\Sesi;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class PelatihanController extends Controller
 {
@@ -30,7 +30,7 @@ class PelatihanController extends Controller
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('nama', 'like', "%{$search}%")
-                      ->orWhere('deskripsi', 'like', "%{$search}%");
+                        ->orWhere('deskripsi', 'like', "%{$search}%");
                 });
             })
             ->latest()
@@ -42,6 +42,7 @@ class PelatihanController extends Controller
     public function create()
     {
         $tutors = User::where('role', 'tutor')->where('is_active', true)->orderBy('nama')->get();
+
         return view('tutor.pelatihan.create', compact('tutors'));
     }
 
@@ -66,6 +67,8 @@ class PelatihanController extends Controller
 
     public function show(Pelatihan $pelatihan)
     {
+        Sesi::finalizePastSessions();
+
         $pelatihan->load(['tutor', 'sesis' => function ($q) {
             $q->withCount('presensis')->orderBy('tanggal', 'asc')->orderBy('jam_mulai', 'asc');
         }, 'pendaftarans.user']);
@@ -76,6 +79,7 @@ class PelatihanController extends Controller
     public function edit(Pelatihan $pelatihan)
     {
         $tutors = User::where('role', 'tutor')->where('is_active', true)->orderBy('nama')->get();
+
         return view('tutor.pelatihan.edit', compact('pelatihan', 'tutors'));
     }
 

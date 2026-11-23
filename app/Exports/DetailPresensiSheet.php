@@ -29,6 +29,7 @@ class DetailPresensiSheet implements FromCollection, WithHeadings, WithTitle, Sh
         return [
             'Tanggal',
             'Judul Sesi',
+            'Nama Pelatihan',
             'Jam Sesi',
             'Lokasi',
             'Nomor Induk',

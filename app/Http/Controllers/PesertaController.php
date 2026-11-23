@@ -6,7 +6,6 @@ use App\Models\Pelatihan;
 use App\Models\Pendaftaran;
 use App\Models\Presensi;
 use App\Models\Sesi;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -15,6 +14,9 @@ class PesertaController extends Controller
 {
     public function dashboard()
     {
+        // Finalisasi sesi yang telah lewat jam pelajaran agar tercatat otomatis Alpa
+        Sesi::finalizePastSessions();
+
         $user = Auth::user();
 
         // Total Pelatihan Diikuti (disetujui)
@@ -49,6 +51,9 @@ class PesertaController extends Controller
 
     public function pelatihanList()
     {
+        // Finalisasi sesi yang telah lewat jam pelajaran agar tercatat otomatis Alpa
+        Sesi::finalizePastSessions();
+
         $user = Auth::user();
 
         $pendaftarans = Pendaftaran::with(['pelatihan.tutor', 'pelatihan.sesis' => function ($q) {
@@ -68,14 +73,12 @@ class PesertaController extends Controller
         $user = Auth::user();
         $search = $request->query('q');
 
-        $enrolledPelatihanIds = $user->pendaftarans()->pluck('pelatihan_id')->toArray();
-
         $pelatihans = Pelatihan::with('tutor')
             ->where('status', 'aktif')
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('nama', 'like', "%{$search}%")
-                      ->orWhere('deskripsi', 'like', "%{$search}%");
+                        ->orWhere('deskripsi', 'like', "%{$search}%");
                 });
             })
             ->withCount(['pesertas as peserta_disetujui_count' => function ($q) {
@@ -137,7 +140,7 @@ class PesertaController extends Controller
             ->where('status', 'disetujui')
             ->exists();
 
-        if (!$isEnrolled) {
+        if (! $isEnrolled) {
             return redirect()->route('peserta.pelatihan')
                 ->with('error', 'Anda bukan peserta aktif yang disetujui pada pelatihan ini.');
         }
@@ -161,14 +164,42 @@ class PesertaController extends Controller
         ));
     }
 
+    /**
+     * Endpoint untuk pemindaian langsung via URL dari kamera ponsel biasa / Google Lens
+     */
+    public function scanFromUrl(Request $request)
+    {
+        if (! Auth::check()) {
+            session()->put('url.intended', $request->fullUrl());
+
+            return redirect()->route('login')->with('info', 'Silakan masuk ke akun Warga Belajar Anda untuk konfirmasi presensi.');
+        }
+
+        $user = Auth::user();
+        if ($user->isTutor()) {
+            return redirect()->route('tutor.dashboard')->with('error', 'Anda masuk sebagai Tutor. Pemindaian presensi khusus untuk akun Warga Belajar (Peserta).');
+        }
+
+        $sesiId = $request->query('sesi') ?: $request->query('sesi_id');
+        $token = $request->query('token');
+
+        $request->merge([
+            'sesi_id' => $sesiId,
+            'token' => $token,
+        ]);
+
+        return $this->submitPresensi($request);
+    }
+
     public function submitPresensi(Request $request)
     {
         $user = Auth::user();
 
         // FR-10 / PRD Sec 10: Rate limiting pada input presensi (maksimal 5 percobaan per menit)
-        $throttleKey = 'presensi-submit:' . $user->id;
+        $throttleKey = 'presensi-submit:'.$user->id;
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
+
             return redirect()->route('peserta.presensi.result')->with('result', [
                 'success' => false,
                 'alasan' => "Terlalu banyak percobaan presensi. Harap tunggu {$seconds} detik.",
@@ -177,18 +208,35 @@ class PesertaController extends Controller
             ]);
         }
 
-        $request->validate([
-            'sesi_id' => ['required', 'exists:sesis,id'],
-            'token' => ['nullable', 'string'],
-            'kode_manual' => ['nullable', 'string'],
-        ]);
+        $rawTokenInput = trim((string) ($request->token ?: $request->kode_manual));
 
-        $sesi = Sesi::with('pelatihan')->findOrFail($request->sesi_id);
-        $tokenInput = trim((string) ($request->token ?: $request->kode_manual));
-        $metode = $request->filled('token') ? 'qr' : 'kode_manual';
+        // Normalisasi jika hasil pemindaian adalah URL utuh
+        $tokenInput = $rawTokenInput;
+        $sesiId = $request->sesi_id;
+
+        if (str_contains($rawTokenInput, 'token=')) {
+            $parsed = parse_url($rawTokenInput);
+            if (! empty($parsed['query'])) {
+                parse_str($parsed['query'], $query);
+                if (! empty($query['token'])) {
+                    $tokenInput = trim($query['token']);
+                }
+                if (empty($sesiId) && ! empty($query['sesi'])) {
+                    $sesiId = $query['sesi'];
+                }
+            }
+        }
+
+        if (empty($sesiId)) {
+            return redirect()->route('peserta.dashboard')->with('error', 'Sesi pembelajaran tidak ditemukan.');
+        }
+
+        $sesi = Sesi::with('pelatihan')->findOrFail($sesiId);
+        $metode = $request->filled('token') || str_contains($rawTokenInput, 'token=') ? 'qr' : 'kode_manual';
 
         if (empty($tokenInput)) {
             RateLimiter::hit($throttleKey, 60);
+
             return redirect()->route('peserta.presensi.result')->with('result', [
                 'success' => false,
                 'alasan' => 'Kode QR atau Kode Manual tidak boleh kosong.',
@@ -203,8 +251,9 @@ class PesertaController extends Controller
             ->where('status', 'disetujui')
             ->exists();
 
-        if (!$isEnrolled) {
+        if (! $isEnrolled) {
             RateLimiter::hit($throttleKey, 60);
+
             return redirect()->route('peserta.presensi.result')->with('result', [
                 'success' => false,
                 'alasan' => 'Bukan peserta pelatihan ini. Anda belum terdaftar atau belum disetujui pada pelatihan terkait.',
@@ -218,10 +267,12 @@ class PesertaController extends Controller
             ->where('user_id', $user->id)
             ->first();
 
-        if ($alreadyAttended) {
+        // Jika sudah ada presensi manual/hadir/izin/sakit, tolak.
+        // Namun jika status sebelumnya adalah 'alpa' otomatis dari sistem dan sesi saat ini aktif/dibuka lagi oleh tutor, perbolehkan update.
+        if ($alreadyAttended && ! ($alreadyAttended->status === 'alpa' && $alreadyAttended->metode === 'sistem')) {
             return redirect()->route('peserta.presensi.result')->with('result', [
                 'success' => false,
-                'alasan' => "Sudah presensi sebelumnya dengan status: " . strtoupper($alreadyAttended->status) . " pada " . $alreadyAttended->waktu_server->format('d/m/Y H:i:s'),
+                'alasan' => 'Sudah presensi sebelumnya dengan status: '.strtoupper($alreadyAttended->status).' pada '.$alreadyAttended->waktu_server->format('d/m/Y H:i:s'),
                 'nama_sesi' => $sesi->judul_sesi,
                 'nama_peserta' => $user->nama,
             ]);
@@ -231,6 +282,7 @@ class PesertaController extends Controller
         $now = now();
         if ($sesi->isBeforeWindow($now)) {
             RateLimiter::hit($throttleKey, 60);
+
             return redirect()->route('peserta.presensi.result')->with('result', [
                 'success' => false,
                 'alasan' => "Di luar jam sesi: Presensi belum dibuka. Presensi baru dibuka 15 menit sebelum kelas dimulai (pukul {$sesi->window_buka->format('H:i')}).",
@@ -241,6 +293,7 @@ class PesertaController extends Controller
 
         if ($sesi->isAfterWindow($now)) {
             RateLimiter::hit($throttleKey, 60);
+
             return redirect()->route('peserta.presensi.result')->with('result', [
                 'success' => false,
                 'alasan' => "Di luar jam sesi: Sesi telah selesai pada pukul {$sesi->waktu_selesai->format('H:i')}. Presensi sudah ditutup.",
@@ -250,8 +303,9 @@ class PesertaController extends Controller
         }
 
         // 4. Cek token / kode manual (termasuk rotasi 5 menit & toleransi jeda 15 detik)
-        if (!$sesi->isTokenValid($tokenInput)) {
+        if (! $sesi->isTokenValid($tokenInput)) {
             RateLimiter::hit($throttleKey, 60);
+
             return redirect()->route('peserta.presensi.result')->with('result', [
                 'success' => false,
                 'alasan' => 'QR kedaluwarsa atau Kode Manual salah. Token diperbarui tiap 5 menit. Harap pindai kode terbaru di layar tutor.',
@@ -263,15 +317,25 @@ class PesertaController extends Controller
         // 5. Tentukan status Hadir vs Terlambat
         $status = $sesi->isLate($now) ? 'terlambat' : 'hadir';
 
-        // 6. Simpan Presensi
-        $presensi = Presensi::create([
-            'sesi_id' => $sesi->id,
-            'user_id' => $user->id,
-            'status' => $status,
-            'waktu_server' => $now,
-            'metode' => $metode,
-            'dicatat_oleh' => null,
-        ]);
+        // 6. Simpan atau perbarui Presensi
+        if ($alreadyAttended) {
+            $alreadyAttended->update([
+                'status' => $status,
+                'waktu_server' => $now,
+                'metode' => $metode,
+                'dicatat_oleh' => null,
+            ]);
+            $presensi = $alreadyAttended;
+        } else {
+            $presensi = Presensi::create([
+                'sesi_id' => $sesi->id,
+                'user_id' => $user->id,
+                'status' => $status,
+                'waktu_server' => $now,
+                'metode' => $metode,
+                'dicatat_oleh' => null,
+            ]);
+        }
 
         RateLimiter::clear($throttleKey);
 
@@ -291,7 +355,7 @@ class PesertaController extends Controller
     public function presensiResult()
     {
         $result = session('result');
-        if (!$result) {
+        if (! $result) {
             return redirect()->route('peserta.dashboard');
         }
 
@@ -300,6 +364,9 @@ class PesertaController extends Controller
 
     public function riwayat()
     {
+        // Finalisasi sesi lampau agar status Alpa akurat
+        Sesi::finalizePastSessions();
+
         $user = Auth::user();
 
         $pendaftarans = Pendaftaran::with(['pelatihan.sesis' => function ($q) {
@@ -326,11 +393,17 @@ class PesertaController extends Controller
             foreach ($pelatihan->sesis as $sesi) {
                 $p = $sesi->presensis->first();
                 if ($p) {
-                    if ($p->status === 'hadir') $hadir++;
-                    elseif ($p->status === 'terlambat') $terlambat++;
-                    elseif ($p->status === 'izin') $izin++;
-                    elseif ($p->status === 'sakit') $sakit++;
-                    elseif ($p->status === 'alpa') $alpa++;
+                    if ($p->status === 'hadir') {
+                        $hadir++;
+                    } elseif ($p->status === 'terlambat') {
+                        $terlambat++;
+                    } elseif ($p->status === 'izin') {
+                        $izin++;
+                    } elseif ($p->status === 'sakit') {
+                        $sakit++;
+                    } elseif ($p->status === 'alpa') {
+                        $alpa++;
+                    }
                 }
             }
 

@@ -2,13 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Models\AuditLog;
 use App\Models\Pelatihan;
 use App\Models\Pendaftaran;
 use App\Models\Presensi;
 use App\Models\Sesi;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -19,8 +17,11 @@ class PresensiPkbmTest extends TestCase
     use RefreshDatabase;
 
     protected User $tutor;
+
     protected User $peserta;
+
     protected Pelatihan $pelatihan;
+
     protected Sesi $sesi;
 
     protected function setUp(): void
@@ -432,5 +433,155 @@ class PresensiPkbmTest extends TestCase
         $pdfResponse = $this->get(route('tutor.laporan.pdf'));
         $pdfResponse->assertOk();
         $this->assertEquals('application/pdf', $pdfResponse->headers->get('content-type'));
+    }
+
+    public function test_tutor_bisa_membuka_form_dan_membuat_sesi_baru(): void
+    {
+        $this->actingAs($this->tutor);
+
+        // 1. Akses form tambah sesi global
+        $responseGlobal = $this->get(route('tutor.sesi.create'));
+        $responseGlobal->assertOk();
+        $responseGlobal->assertSee('Tambah Sesi Pembelajaran Baru');
+
+        // 2. Akses form tambah sesi terikat pelatihan
+        $responseScoped = $this->get(route('tutor.pelatihan.sesi.create', $this->pelatihan));
+        $responseScoped->assertOk();
+        $responseScoped->assertSee($this->pelatihan->nama);
+
+        // 3. Simpan sesi baru
+        $storeResponse = $this->post(route('tutor.sesi.store'), [
+            'pelatihan_id' => $this->pelatihan->id,
+            'judul_sesi' => 'Sesi Algoritma Dasar',
+            'tanggal' => now()->toDateString(),
+            'jam_mulai' => now()->subMinutes(5)->format('H:i'),
+            'jam_selesai' => now()->addHours(2)->format('H:i'),
+            'batas_terlambat_menit' => 15,
+            'lokasi' => 'Lab Komputer 1',
+        ]);
+
+        $storeResponse->assertRedirect(route('tutor.pelatihan.show', $this->pelatihan->id));
+        $this->assertDatabaseHas('sesis', [
+            'pelatihan_id' => $this->pelatihan->id,
+            'judul_sesi' => 'Sesi Algoritma Dasar',
+        ]);
+    }
+
+    public function test_tutor_bisa_aktifkan_sesi_langsung_ke_waktu_sekarang(): void
+    {
+        $this->actingAs($this->tutor);
+
+        // Buat sesi di waktu lampau
+        $sesiLampau = Sesi::create([
+            'pelatihan_id' => $this->pelatihan->id,
+            'judul_sesi' => 'Sesi Pagi',
+            'tanggal' => now()->toDateString(),
+            'jam_mulai' => '07:00:00',
+            'jam_selesai' => '08:30:00',
+            'batas_terlambat_menit' => 15,
+            'lokasi' => 'Ruang 1',
+            'qr_token' => Str::random(40),
+            'kode_manual' => 'PAGI01',
+            'token_expired_at' => now()->subHours(2),
+            'is_finalized' => false,
+        ]);
+
+        $this->assertFalse($sesiLampau->isWithinAttendanceWindow());
+
+        // Tutor klik Buka Sekarang (activate-now)
+        $response = $this->post(route('tutor.sesi.activate-now', $sesiLampau));
+        $response->assertRedirect();
+
+        $sesiLampau->refresh();
+        $this->assertTrue($sesiLampau->isWithinAttendanceWindow());
+    }
+
+    public function test_peserta_bisa_absen_via_url_scan_langsung(): void
+    {
+        $this->actingAs($this->peserta);
+
+        // Simulasi scan dari kamera HP biasa yang membuka URL langsung
+        $scanUrl = route('presensi.scan-url', [
+            'sesi' => $this->sesi->id,
+            'token' => $this->sesi->qr_token,
+        ]);
+
+        $response = $this->get($scanUrl);
+        $response->assertRedirect(route('peserta.presensi.result'));
+
+        $this->assertDatabaseHas('presensis', [
+            'sesi_id' => $this->sesi->id,
+            'user_id' => $this->peserta->id,
+            'status' => 'hadir',
+            'metode' => 'qr',
+        ]);
+    }
+
+    public function test_peserta_bisa_submit_presensi_dengan_url_penuh(): void
+    {
+        $this->actingAs($this->peserta);
+
+        // Buat sesi baru
+        $sesiBaru = Sesi::create([
+            'pelatihan_id' => $this->pelatihan->id,
+            'judul_sesi' => 'Sesi Percobaan Full URL',
+            'tanggal' => now()->toDateString(),
+            'jam_mulai' => now()->subMinutes(5)->format('H:i'),
+            'jam_selesai' => now()->addHours(2)->format('H:i'),
+            'batas_terlambat_menit' => 15,
+            'lokasi' => 'Ruang 2',
+            'qr_token' => 'VALIDTOKEN123456789012345678901234567890',
+            'kode_manual' => 'FL1234',
+            'token_expired_at' => now()->addMinutes(5),
+            'is_finalized' => false,
+        ]);
+
+        // Input hasil scan adalah string URL utuh
+        $fullScannedUrl = 'http://localhost:8000/presensi/scan?sesi='.$sesiBaru->id.'&token='.$sesiBaru->qr_token;
+
+        $response = $this->post(route('peserta.presensi.submit'), [
+            'sesi_id' => $sesiBaru->id,
+            'token' => $fullScannedUrl,
+        ]);
+
+        $response->assertRedirect(route('peserta.presensi.result'));
+
+        $this->assertDatabaseHas('presensis', [
+            'sesi_id' => $sesiBaru->id,
+            'user_id' => $this->peserta->id,
+            'status' => 'hadir',
+            'metode' => 'qr',
+        ]);
+    }
+
+    public function test_peserta_terdaftar_tidak_absen_sesi_berakhir_otomatis_alpa(): void
+    {
+        $pastSesi = Sesi::create([
+            'pelatihan_id' => $this->pelatihan->id,
+            'judul_sesi' => 'Sesi Lampau Wajib Hadir',
+            'tanggal' => now()->toDateString(),
+            'jam_mulai' => now()->subHours(4)->format('H:i'),
+            'jam_selesai' => now()->subHours(2)->format('H:i'),
+            'batas_terlambat_menit' => 15,
+            'lokasi' => 'Ruang 1',
+            'qr_token' => Str::random(40),
+            'kode_manual' => 'SES999',
+            'token_expired_at' => now()->subHours(2),
+            'is_finalized' => false,
+        ]);
+
+        $this->actingAs($this->peserta);
+        $response = $this->get(route('peserta.pelatihan'));
+        $response->assertOk();
+
+        $response->assertSee('Alpa');
+        $response->assertDontSee('Selesai');
+
+        $this->assertDatabaseHas('presensis', [
+            'sesi_id' => $pastSesi->id,
+            'user_id' => $this->peserta->id,
+            'status' => 'alpa',
+            'metode' => 'sistem',
+        ]);
     }
 }

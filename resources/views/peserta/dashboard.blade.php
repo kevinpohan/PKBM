@@ -1,100 +1,173 @@
 <x-app-layout title="Dashboard Warga Belajar">
-    <div class="space-y-6">
+    <div class="flex flex-col gap-6">
 
-        <!-- Welcome Banner (FR-03) -->
-        <div class="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 rounded-2xl p-6 sm:p-8 text-white shadow-lg shadow-blue-900/10 relative overflow-hidden">
-            <div class="relative z-10 max-w-2xl">
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-white/20 text-white backdrop-blur-md mb-3 border border-white/20">
-                    Sistem Presensi Digital PKBM
-                </span>
-                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Selamat datang, {{ $user->nama }}! 👋</h1>
-                <p class="text-blue-100 text-sm mt-1.5 leading-relaxed">
-                    Pastikan Anda selalu memindai QR sesi pada saat pembelajaran dimulai untuk mencatat kehadiran tepat waktu.
-                </p>
-                <div class="flex flex-wrap items-center gap-3 mt-5">
-                    <a href="{{ route('peserta.pelatihan') }}" class="px-4 py-2 bg-white text-blue-700 font-semibold text-xs rounded-xl shadow-xs hover:bg-blue-50 transition cursor-pointer">
-                        Pelatihan Yang Diikuti
+        <!-- 1. Warm Welcome Hero Profile Card (Stitch Component 1) -->
+        <section class="bg-surface-container-lowest rounded-2xl p-5 sm:p-6 shadow-xs border border-outline-variant/30 relative overflow-hidden">
+            <div class="absolute -right-8 -bottom-8 w-40 h-40 rounded-full bg-primary-fixed/30 pointer-events-none blur-xl"></div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+                <div class="flex items-center gap-4">
+                    <div class="relative shrink-0">
+                        <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-primary text-on-primary font-extrabold text-xl sm:text-2xl flex items-center justify-center shadow-xs">
+                            {{ strtoupper(substr($user->nama, 0, 2)) }}
+                        </div>
+                        <span class="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-secondary rounded-full ring-2 ring-surface-container-lowest" title="Akun Warga Belajar Aktif"></span>
+                    </div>
+
+                    <div class="flex flex-col min-w-0">
+                        <h1 class="text-xl sm:text-2xl font-extrabold text-on-surface truncate">Selamat datang, {{ $user->nama }}! 👋</h1>
+                        <p class="text-xs sm:text-sm text-on-surface-variant line-clamp-1 mt-0.5">Warga Belajar PKBM Terbuka • Program Kesetaraan & Vokasi</p>
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="inline-flex items-center gap-1 text-xs font-bold text-secondary bg-secondary-container/50 px-2.5 py-0.5 rounded-full">
+                                <span class="material-symbols-outlined text-[14px]">school</span>
+                                <span>ID: {{ $user->username }}</span>
+                            </span>
+                            <span class="inline-flex items-center gap-1 text-xs font-semibold text-primary bg-primary-fixed px-2.5 py-0.5 rounded-full">
+                                <span class="material-symbols-outlined text-[14px]">verified</span>
+                                <span>Aktif</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Button in Hero (Desktop view) -->
+                <div class="hidden sm:flex items-center gap-2 shrink-0">
+                    <a href="{{ route('peserta.cari-pelatihan') }}"
+                       class="px-3.5 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-xs font-bold text-primary border border-outline-variant/30 transition flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[18px]">search</span>
+                        <span>Cari Pelatihan Baru</span>
                     </a>
-                    <a href="{{ route('peserta.cari-pelatihan') }}" class="px-4 py-2 bg-blue-600/60 hover:bg-blue-600/80 text-white font-semibold text-xs rounded-xl border border-white/30 backdrop-blur-md transition cursor-pointer">
-                        Cari Pelatihan Baru &rarr;
-                    </a>
                 </div>
             </div>
-            <!-- Decorative circle -->
-            <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-white/5 rounded-full pointer-events-none"></div>
-        </div>
+        </section>
 
-        <!-- Metric Stat Cards (FR-02, FR-03) -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-                <div class="flex items-center justify-between text-slate-500 mb-2">
-                    <span class="text-xs font-semibold">Pelatihan Aktif</span>
-                    <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+        <!-- 2. Quick Stats Overview Cards (Stitch Component 2 - 2 cols on mobile, 4 cols on desktop) -->
+        <section aria-label="Ringkasan Statistik Kehadiran" class="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+            <!-- Stat 1: Pelatihan Diikuti -->
+            <div class="bg-surface-container-lowest rounded-2xl p-4 sm:p-5 shadow-xs border border-outline-variant/30 flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                    <span class="w-10 h-10 rounded-xl bg-primary-fixed text-primary flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[22px]">local_library</span>
+                    </span>
+                    <span class="text-[11px] bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded-full font-bold">
+                        Aktif
+                    </span>
+                </div>
+                <div class="mt-3">
+                    <p class="text-2xl sm:text-3xl font-extrabold text-primary leading-none">{{ $totalPelatihan }}</p>
+                    <p class="text-xs sm:text-sm font-bold text-on-surface mt-1.5">Pelatihan Diikuti</p>
+                    <p class="text-[11px] text-on-surface-variant mt-0.5">Program terdaftar</p>
+                </div>
+            </div>
+
+            <!-- Stat 2: Total Kehadiran -->
+            <div class="bg-surface-container-lowest rounded-2xl p-4 sm:p-5 shadow-xs border border-outline-variant/30 flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                    <span class="w-10 h-10 rounded-xl bg-secondary-container text-secondary flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[22px]">verified</span>
+                    </span>
+                    <span class="text-[11px] text-secondary font-bold flex items-center gap-0.5 bg-secondary-container/40 px-2 py-0.5 rounded-full">
+                        <span class="material-symbols-outlined text-[13px]">trending_up</span> Hadir
+                    </span>
+                </div>
+                <div class="mt-3">
+                    <p class="text-2xl sm:text-3xl font-extrabold text-secondary leading-none">{{ $totalHadir }}</p>
+                    <p class="text-xs sm:text-sm font-bold text-on-surface mt-1.5">Total Kehadiran</p>
+                    <p class="text-[11px] text-on-surface-variant mt-0.5">Tepat waktu & terlambat</p>
+                </div>
+            </div>
+
+            <!-- Stat 3: Izin & Sakit -->
+            <div class="bg-surface-container-lowest rounded-2xl p-4 sm:p-5 shadow-xs border border-outline-variant/30 flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                    <span class="w-10 h-10 rounded-xl bg-surface-container-high text-on-surface flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[22px]">clinical_notes</span>
+                    </span>
+                    <span class="text-[11px] text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full font-semibold">
+                        Izin
+                    </span>
+                </div>
+                <div class="mt-3">
+                    <p class="text-2xl sm:text-3xl font-extrabold text-on-surface leading-none">{{ $totalIzinSakit }}</p>
+                    <p class="text-xs sm:text-sm font-bold text-on-surface mt-1.5">Izin & Sakit</p>
+                    <p class="text-[11px] text-on-surface-variant mt-0.5">Tercatat resmi</p>
+                </div>
+            </div>
+
+            <!-- Stat 4: Alpa / Tidak Hadir -->
+            <div class="bg-surface-container-lowest rounded-2xl p-4 sm:p-5 shadow-xs border border-outline-variant/30 flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                    <span class="w-10 h-10 rounded-xl bg-error-container text-error flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[22px]">person_off</span>
+                    </span>
+                    <span class="text-[11px] text-error font-bold bg-error-container/40 px-2 py-0.5 rounded-full">
+                        Alpa
+                    </span>
+                </div>
+                <div class="mt-3">
+                    <p class="text-2xl sm:text-3xl font-extrabold text-error leading-none">{{ $totalAlpa }}</p>
+                    <p class="text-xs sm:text-sm font-bold text-on-surface mt-1.5">Tidak Hadir</p>
+                    <p class="text-[11px] text-on-surface-variant mt-0.5">Tanpa keterangan</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Action Buttons Section (Mobile Friendly Quick Shortcuts) -->
+        <section aria-label="Menu Aksi Cepat" class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <a href="{{ route('peserta.pelatihan') }}"
+               class="min-h-[52px] px-5 py-3.5 rounded-2xl bg-primary text-on-primary shadow-xs flex items-center justify-between hover:bg-primary-container active:scale-[0.99] transition">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-on-primary">
+                        <span class="material-symbols-outlined text-[20px]">menu_book</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-xs sm:text-sm font-bold leading-tight">Pelatihan Yang Diikuti</span>
+                        <span class="text-[11px] text-on-primary-container">Lihat jadwal sesi & materi</span>
                     </div>
                 </div>
-                <div class="text-2xl font-black text-slate-900">{{ $totalPelatihan }}</div>
-                <span class="text-[11px] text-slate-400">Program diikuti</span>
-            </div>
+                <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+            </a>
 
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-                <div class="flex items-center justify-between text-slate-500 mb-2">
-                    <span class="text-xs font-semibold">Total Hadir</span>
-                    <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <a href="{{ route('peserta.cari-pelatihan') }}"
+               class="min-h-[52px] px-5 py-3.5 rounded-2xl bg-surface-container-lowest text-on-surface shadow-xs border border-outline-variant/30 flex items-center justify-between hover:bg-surface-container active:scale-[0.99] transition">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-primary-fixed text-primary flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[20px]">search</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-xs sm:text-sm font-bold leading-tight">Cari Pelatihan Baru</span>
+                        <span class="text-[11px] text-on-surface-variant">Daftar ke kelas keterampilan terbuka</span>
                     </div>
                 </div>
-                <div class="text-2xl font-black text-emerald-600">{{ $totalHadir }}</div>
-                <span class="text-[11px] text-slate-400">Tepat waktu & terlambat</span>
-            </div>
+                <span class="material-symbols-outlined text-[20px] text-on-surface-variant">arrow_forward</span>
+            </a>
+        </section>
 
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-                <div class="flex items-center justify-between text-slate-500 mb-2">
-                    <span class="text-xs font-semibold">Izin & Sakit</span>
-                    <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                    </div>
-                </div>
-                <div class="text-2xl font-black text-amber-600">{{ $totalIzinSakit }}</div>
-                <span class="text-[11px] text-slate-400">Tercatat resmi</span>
-            </div>
-
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-                <div class="flex items-center justify-between text-slate-500 mb-2">
-                    <span class="text-xs font-semibold">Alpa / Tidak Hadir</span>
-                    <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </div>
-                </div>
-                <div class="text-2xl font-black text-rose-600">{{ $totalAlpa }}</div>
-                <span class="text-[11px] text-slate-400">Tanpa keterangan</span>
-            </div>
-
-        </div>
-
-        <!-- Sesi Hari Ini Section -->
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6">
-            <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+        <!-- 4. Sesi Hari Ini: Class Schedule Focus -->
+        <section class="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 shadow-xs p-5 sm:p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-outline-variant/20 mb-4">
                 <div>
-                    <h2 class="text-base font-bold text-slate-900">Sesi Kelas Hari Ini</h2>
-                    <p class="text-xs text-slate-500">Jadwal pembelajaran yang berlangsung hari ini.</p>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+                        <h2 class="text-base sm:text-lg font-bold text-on-surface">Jadwal Kelas Hari Ini</h2>
+                    </div>
+                    <p class="text-xs text-on-surface-variant mt-0.5">Pastikan Anda berada di kelas dan scan QR yang ditampilkan oleh tutor.</p>
                 </div>
-                <span class="text-xs font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-lg">
+                <span class="text-xs font-semibold text-on-surface-variant bg-surface-container px-3 py-1 rounded-xl self-start sm:self-auto">
                     {{ now()->translatedFormat('l, d F Y') }}
                 </span>
             </div>
 
             @if($sesiHariIni->isEmpty())
-                <div class="text-center py-10 px-4">
-                    <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <div class="text-center py-10 px-4 rounded-xl bg-surface-container-low/50 border border-dashed border-outline-variant/40">
+                    <div class="w-12 h-12 rounded-2xl bg-surface-container flex items-center justify-center mx-auto text-on-surface-variant mb-3">
+                        <span class="material-symbols-outlined text-[28px]">event_available</span>
                     </div>
-                    <p class="text-sm font-semibold text-slate-700">Tidak ada jadwal sesi hari ini</p>
-                    <p class="text-xs text-slate-400 mt-1">Silakan periksa jadwal mendatang pada menu Pelatihan Saya.</p>
+                    <p class="text-sm font-bold text-on-surface">Tidak ada jadwal sesi kelas hari ini</p>
+                    <p class="text-xs text-on-surface-variant mt-1">Silakan periksa jadwal sesi berikutnya pada menu Pelatihan Saya.</p>
                 </div>
             @else
-                <div class="space-y-3">
+                <div class="flex flex-col gap-3.5">
                     @foreach($sesiHariIni as $sesi)
                         @php
                             $userPresensi = $sesi->presensis->first();
@@ -103,39 +176,55 @@
                             $isBefore = $sesi->isBeforeWindow($now);
                             $isAfter = $sesi->isAfterWindow($now);
                         @endphp
-                        <div class="p-4 rounded-xl border {{ $userPresensi ? 'border-emerald-200 bg-emerald-50/40' : ($isWithinWindow ? 'border-blue-300 bg-blue-50/50' : 'border-slate-200 bg-slate-50') }} flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition">
-                            <div class="space-y-1">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xs font-bold text-blue-700">{{ $sesi->pelatihan->nama }}</span>
-                                    <span class="text-[10px] text-slate-400">&bull;</span>
-                                    <span class="text-xs text-slate-500">{{ $sesi->lokasi }}</span>
+                        <div class="p-4 sm:p-5 rounded-2xl border {{ $userPresensi ? 'border-secondary/40 bg-secondary-container/20' : ($isWithinWindow ? 'border-primary/40 bg-primary-fixed/20' : 'border-outline-variant/30 bg-surface-container-low/60') }} flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition">
+                            <div class="space-y-1.5">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="text-xs font-bold text-primary">{{ $sesi->pelatihan->nama }}</span>
+                                    <span class="text-outline text-xs">•</span>
+                                    <span class="text-xs text-on-surface-variant flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[16px] text-primary">location_on</span>
+                                        {{ $sesi->lokasi }}
+                                    </span>
                                 </div>
-                                <h3 class="text-sm font-bold text-slate-900">{{ $sesi->judul_sesi }}</h3>
-                                <p class="text-xs text-slate-600 flex items-center gap-1.5">
-                                    <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                    {{ substr((string)$sesi->jam_mulai, 0, 5) }} – {{ substr((string)$sesi->jam_selesai, 0, 5) }} WIB
-                                    <span class="text-[11px] text-slate-400">(Toleransi keterlambatan {{ $sesi->batas_terlambat_menit }} mnt)</span>
+                                <h3 class="text-base font-bold text-on-surface">{{ $sesi->judul_sesi }}</h3>
+                                <p class="text-xs text-on-surface-variant flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-[16px]">schedule</span>
+                                    <span>{{ substr((string)$sesi->jam_mulai, 0, 5) }} – {{ substr((string)$sesi->jam_selesai, 0, 5) }} WIB</span>
+                                    <span class="text-outline">•</span>
+                                    <span class="text-[11px] text-on-surface-variant">(Toleransi {{ $sesi->batas_terlambat_menit }} mnt)</span>
                                 </p>
                             </div>
 
-                            <div class="flex items-center gap-3 shrink-0">
+                            <div class="flex items-center gap-3 shrink-0 self-start sm:self-auto">
                                 @if($userPresensi)
-                                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-800 text-xs font-semibold border border-emerald-200">
-                                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                                        {{ strtoupper($userPresensi->status) }} ({{ $userPresensi->waktu_server->format('H:i') }})
+                                    @php
+                                        $st = strtolower($userPresensi->status);
+                                    @endphp
+                                    <div class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs
+                                        {{ $st === 'hadir' ? 'bg-secondary text-on-secondary' :
+                                           ($st === 'terlambat' ? 'bg-amber-500 text-white' :
+                                           ($st === 'izin' ? 'bg-primary text-on-primary' :
+                                           ($st === 'sakit' ? 'bg-purple-700 text-white' : 'bg-error text-on-error'))) }}">
+                                        <span class="material-symbols-outlined text-[18px]">
+                                            {{ $st === 'alpa' ? 'cancel' : 'verified' }}
+                                        </span>
+                                        <span class="uppercase">{{ $userPresensi->status }} ({{ $userPresensi->waktu_server ? $userPresensi->waktu_server->format('H:i') : '-' }})</span>
                                     </div>
                                 @elseif($isWithinWindow)
-                                    <a href="{{ route('peserta.presensi.pindai', $sesi) }}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-sm transition transform active:scale-95">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
-                                        Pindai QR / Kode
+                                    <a href="{{ route('peserta.presensi.pindai', $sesi) }}"
+                                       class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded-xl shadow-xs transition active:scale-[0.98]">
+                                        <span class="material-symbols-outlined text-[20px]">qr_code_scanner</span>
+                                        <span>Pindai QR / Kode</span>
                                     </a>
                                 @elseif($isBefore)
-                                    <span class="text-xs font-medium text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200">
-                                        Dibuka 15 mnt sebelum mulai ({{ $sesi->window_buka->format('H:i') }})
+                                    <span class="text-xs font-semibold text-on-surface-variant bg-surface-container px-3 py-2 rounded-xl border border-outline-variant/30 flex items-center gap-1.5">
+                                        <span class="material-symbols-outlined text-[16px]">hourglass_top</span>
+                                        <span>Buka jam {{ $sesi->window_buka->format('H:i') }}</span>
                                     </span>
                                 @else
-                                    <span class="text-xs font-medium text-rose-700 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-200">
-                                        Sesi Selesai (Tidak Hadir)
+                                    <span class="text-xs font-bold text-error bg-error-container px-3 py-2 rounded-xl border border-error/30 flex items-center gap-1.5">
+                                        <span class="material-symbols-outlined text-[16px]">cancel</span>
+                                        <span>ALPA (Tidak Hadir)</span>
                                     </span>
                                 @endif
                             </div>
@@ -143,7 +232,7 @@
                     @endforeach
                 </div>
             @endif
-        </div>
+        </section>
 
     </div>
 </x-app-layout>

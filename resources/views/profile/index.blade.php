@@ -1,82 +1,86 @@
 <x-app-layout title="Profil & Ganti Kata Sandi">
-    <div class="max-w-3xl mx-auto space-y-6">
+    <div class="max-w-3xl mx-auto flex flex-col gap-6">
 
-        <div class="flex items-center justify-between pb-4 border-b border-slate-200">
+        <div class="bg-surface-container-lowest p-5 sm:p-6 rounded-2xl shadow-xs border border-outline-variant/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-                <h1 class="text-xl font-bold text-slate-900 tracking-tight">Profil Pengguna & Keamanan</h1>
-                <p class="text-xs text-slate-500">Kelola identitas akun dan perbarui kata sandi Anda.</p>
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
+                    <h1 class="text-xl sm:text-2xl font-extrabold text-on-surface tracking-tight">Profil Akun & Keamanan</h1>
+                </div>
+                <p class="text-xs text-on-surface-variant mt-1">Kelola data profil pengguna dan perbarui kata sandi akun Anda.</p>
             </div>
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold {{ $user->isTutor() ? 'bg-indigo-100 text-indigo-800' : 'bg-emerald-100 text-emerald-800' }}">
-                {{ $user->isTutor() ? 'Akun Tutor / Instruktur' : 'Akun Warga Belajar' }}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold {{ $user->isTutor() ? 'bg-primary-fixed text-on-primary-fixed' : 'bg-secondary-container text-on-secondary-container' }} self-start sm:self-auto">
+                <span class="material-symbols-outlined text-[16px]">{{ $user->isTutor() ? 'badge' : 'school' }}</span>
+                <span>{{ $user->isTutor() ? 'Tutor / Instruktur' : 'Warga Belajar' }}</span>
             </span>
         </div>
 
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6">
+        <div class="bg-surface-container-lowest rounded-3xl border border-outline-variant/30 shadow-xs p-6 sm:p-8">
             <form method="POST" action="{{ route('profile.update') }}" class="space-y-6">
                 @csrf
 
                 <!-- Basic Info -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label for="nama" class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap</label>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="nama" class="text-xs font-bold text-on-surface">Nama Lengkap</label>
                         <input type="text" id="nama" name="nama" value="{{ old('nama', $user->nama) }}" required
-                               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-hidden transition">
+                               class="w-full px-3.5 py-2.5 bg-surface-container-low border border-outline-variant/40 rounded-xl text-xs text-on-surface focus:ring-2 focus:ring-primary focus:outline-none transition">
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">Username (Login)</label>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-bold text-on-surface">Username (Login)</label>
                         <input type="text" disabled value="{{ $user->username }}"
-                               class="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-not-allowed">
-                        <span class="text-[10px] text-slate-400 mt-0.5 block">Username unik tidak dapat diubah sendiri.</span>
+                               class="w-full px-3.5 py-2.5 bg-surface-container border border-outline-variant/20 rounded-xl text-xs text-on-surface-variant cursor-not-allowed">
+                        <span class="text-[10px] text-on-surface-variant">Username terdaftar di sistem Dapodik/PKBM.</span>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">Nomor Induk (NISN/NIK/NIP)</label>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-bold text-on-surface">Nomor Induk (NISN/NIK/NUPTK)</label>
                         <input type="text" disabled value="{{ $user->nomor_induk ?? '-' }}"
-                               class="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-not-allowed">
+                               class="w-full px-3.5 py-2.5 bg-surface-container border border-outline-variant/20 rounded-xl text-xs text-on-surface-variant cursor-not-allowed">
                     </div>
 
-                    <div>
-                        <label for="no_hp" class="block text-xs font-semibold text-slate-700 mb-1">Nomor Telepon / WhatsApp</label>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="no_hp" class="text-xs font-bold text-on-surface">Nomor WhatsApp / HP</label>
                         <input type="text" id="no_hp" name="no_hp" value="{{ old('no_hp', $user->no_hp) }}"
-                               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-hidden transition"
+                               class="w-full px-3.5 py-2.5 bg-surface-container-low border border-outline-variant/40 rounded-xl text-xs text-on-surface focus:ring-2 focus:ring-primary focus:outline-none transition"
                                placeholder="Contoh: 081234567890">
                     </div>
                 </div>
 
                 <!-- Password Change Section -->
-                <div class="pt-6 border-t border-slate-100">
-                    <h2 class="text-sm font-bold text-slate-900 mb-1">Ganti Kata Sandi (Opsional)</h2>
-                    <p class="text-xs text-slate-500 mb-4">Kosongkan kolom di bawah jika Anda tidak ingin mengubah kata sandi.</p>
+                <div class="pt-6 border-t border-outline-variant/20">
+                    <h2 class="text-sm font-bold text-on-surface mb-1">Ganti Kata Sandi (Opsional)</h2>
+                    <p class="text-xs text-on-surface-variant mb-4">Kosongkan jika Anda tidak ingin memperbarui kata sandi.</p>
 
                     <div class="space-y-4 max-w-md">
-                        <div>
-                            <label for="password_lama" class="block text-xs font-semibold text-slate-700 mb-1">Kata Sandi Saat Ini</label>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="password_lama" class="text-xs font-bold text-on-surface">Kata Sandi Saat Ini</label>
                             <input type="password" id="password_lama" name="password_lama"
-                                   class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-hidden transition"
+                                   class="w-full px-3.5 py-2 bg-surface-container-low border border-outline-variant/40 rounded-xl text-xs text-on-surface focus:ring-2 focus:ring-primary focus:outline-none transition"
                                    placeholder="••••••••">
                         </div>
 
-                        <div>
-                            <label for="password_baru" class="block text-xs font-semibold text-slate-700 mb-1">Kata Sandi Baru</label>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="password_baru" class="text-xs font-bold text-on-surface">Kata Sandi Baru</label>
                             <input type="password" id="password_baru" name="password_baru"
-                                   class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-hidden transition"
+                                   class="w-full px-3.5 py-2 bg-surface-container-low border border-outline-variant/40 rounded-xl text-xs text-on-surface focus:ring-2 focus:ring-primary focus:outline-none transition"
                                    placeholder="Minimal 6 karakter">
                         </div>
 
-                        <div>
-                            <label for="password_baru_confirmation" class="block text-xs font-semibold text-slate-700 mb-1">Konfirmasi Kata Sandi Baru</label>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="password_baru_confirmation" class="text-xs font-bold text-on-surface">Konfirmasi Sandi Baru</label>
                             <input type="password" id="password_baru_confirmation" name="password_baru_confirmation"
-                                   class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-hidden transition"
+                                   class="w-full px-3.5 py-2 bg-surface-container-low border border-outline-variant/40 rounded-xl text-xs text-on-surface focus:ring-2 focus:ring-primary focus:outline-none transition"
                                    placeholder="Ulangi kata sandi baru">
                         </div>
                     </div>
                 </div>
 
-                <div class="pt-4 flex justify-end">
+                <div class="pt-4 flex justify-end border-t border-outline-variant/20">
                     <button type="submit"
-                            class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl shadow-sm transition cursor-pointer">
-                        Simpan Perubahan
+                            class="px-5 py-2.5 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded-xl shadow-xs transition cursor-pointer">
+                        Simpan Perubahan Profil
                     </button>
                 </div>
             </form>

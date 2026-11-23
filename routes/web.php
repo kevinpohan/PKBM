@@ -23,6 +23,7 @@ Route::get('/', function () {
             ? redirect()->route('tutor.dashboard')
             : redirect()->route('peserta.dashboard');
     }
+
     return redirect()->route('login');
 });
 
@@ -33,6 +34,10 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+
+// Direct Scan URL (Bisa diakses langsung dari kamera ponsel / Google Lens)
+Route::get('/scan', [PesertaController::class, 'scanFromUrl'])->name('scan-direct');
+Route::get('/presensi/scan', [PesertaController::class, 'scanFromUrl'])->name('presensi.scan-url');
 
 // Profil Pengguna & Ganti Password (FR-02)
 Route::middleware('auth')->group(function () {
@@ -53,6 +58,7 @@ Route::middleware(['auth', 'role:peserta'])->prefix('peserta')->as('peserta.')->
 
     // Presensi Sesi (FR-06, FR-07, FR-08, FR-09)
     Route::get('/presensi/pindai/{sesi}', [PesertaController::class, 'showPindai'])->name('presensi.pindai');
+    Route::get('/presensi/scan', [PesertaController::class, 'scanFromUrl'])->name('presensi.scan-url');
     Route::post('/presensi/submit', [PesertaController::class, 'submitPresensi'])->name('presensi.submit');
     Route::get('/presensi/result', [PesertaController::class, 'presensiResult'])->name('presensi.result');
 
@@ -75,6 +81,10 @@ Route::middleware(['auth', 'role:tutor'])->prefix('tutor')->as('tutor.')->group(
     Route::post('/pelatihan/pendaftaran/{pendaftaran}/reject', [PelatihanController::class, 'rejectPendaftaran'])->name('pelatihan.pendaftaran.reject');
 
     // Sesi Pembelajaran & Core QR (FR-08, FR-09, FR-11, FR-12)
+    Route::get('/sesi/create/{pelatihan?}', [SesiController::class, 'create'])->name('sesi.create');
+    Route::post('/sesi/store', [SesiController::class, 'store'])->name('sesi.store');
+    Route::post('/sesi/{sesi}/activate-now', [SesiController::class, 'activateNow'])->name('sesi.activate-now');
+    Route::post('/sesi/{sesi}/finalize', [SesiController::class, 'finalize'])->name('sesi.finalize');
     Route::get('/pelatihan/{pelatihan}/sesi/create', [SesiController::class, 'create'])->name('pelatihan.sesi.create');
     Route::post('/pelatihan/{pelatihan}/sesi', [SesiController::class, 'store'])->name('pelatihan.sesi.store');
     Route::get('/sesi/{sesi}/edit', [SesiController::class, 'edit'])->name('sesi.edit');
