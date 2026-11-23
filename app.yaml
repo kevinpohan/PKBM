@@ -1,0 +1,8 @@
+kind: wasmer.io/App.v0
+name: pkbm-presensi
+package: .
+
+env:
+  APP_ENV: production
+  APP_DEBUG: "false"
+  DB_CONNECTION: mysql
