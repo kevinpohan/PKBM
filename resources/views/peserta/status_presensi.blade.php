@@ -8,19 +8,20 @@
             <div class="bg-surface-container-lowest rounded-3xl border-2 border-secondary/40 shadow-xl overflow-hidden text-center">
                 
                 <!-- Hero Header -->
-                <div class="bg-gradient-to-b from-secondary to-secondary/90 p-8 text-on-secondary relative overflow-hidden">
+                <div class="p-8 text-white relative overflow-hidden bg-[#006c4a]"
+                     style="background: linear-gradient(180deg, #006c4a 0%, #004d34 100%); color: #ffffff;">
                     <div class="absolute -right-8 -bottom-8 w-36 h-36 rounded-full bg-white/10 blur-lg pointer-events-none"></div>
 
                     <div class="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/30 shadow-xs backdrop-blur-sm">
-                        <span class="material-symbols-outlined fill text-[48px] text-on-secondary">verified</span>
+                        <span class="material-symbols-outlined fill text-[48px] text-white">verified</span>
                     </div>
 
-                    <span class="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/20 border border-white/30 mb-2">
+                    <span class="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/20 border border-white/30 mb-2 text-white">
                         Presensi Berhasil Tercatat
                     </span>
-                    <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Status: {{ strtoupper($result['status']) }}</h1>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Status: {{ strtoupper($result['status']) }}</h1>
                     @if($result['status'] === 'terlambat')
-                        <p class="text-secondary-fixed text-xs mt-1">(Tercatat melewati batas toleransi keterlambatan)</p>
+                        <p class="text-emerald-200 text-xs mt-1 font-semibold">(Tercatat melewati batas toleransi keterlambatan)</p>
                     @endif
                 </div>
 
@@ -75,17 +76,18 @@
             <div class="bg-surface-container-lowest rounded-3xl border-2 border-error/30 shadow-xl overflow-hidden text-center">
                 
                 <!-- Hero Header -->
-                <div class="bg-gradient-to-b from-error to-error/90 p-8 text-on-error relative overflow-hidden">
+                <div class="p-8 text-white relative overflow-hidden bg-[#ba1a1a]"
+                     style="background: linear-gradient(180deg, #ba1a1a 0%, #8e1010 100%); color: #ffffff;">
                     <div class="absolute -right-8 -bottom-8 w-36 h-36 rounded-full bg-white/10 blur-lg pointer-events-none"></div>
 
                     <div class="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/30 shadow-xs backdrop-blur-sm">
-                        <span class="material-symbols-outlined text-[48px] text-on-error">cancel</span>
+                        <span class="material-symbols-outlined text-[48px] text-white">cancel</span>
                     </div>
 
-                    <span class="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/20 border border-white/30 mb-2">
+                    <span class="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/20 border border-white/30 mb-2 text-white">
                         Presensi Ditolak
                     </span>
-                    <h1 class="text-2xl font-extrabold tracking-tight">Presensi Tidak Berhasil</h1>
+                    <h1 class="text-2xl font-extrabold tracking-tight text-white">Presensi Tidak Berhasil</h1>
                 </div>
 
                 <div class="p-6 sm:p-8 space-y-5 text-left">
