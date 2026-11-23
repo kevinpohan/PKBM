@@ -5,4 +5,15 @@ package: .
 env:
   APP_ENV: production
   APP_DEBUG: "false"
+  APP_KEY: "base64:na/CkapnqowqYobPqWdhs4xx6iMGJIPSkCKO4SO76xQ="
   DB_CONNECTION: mysql
+  TIDB_HOST: "gateway01.ap-southeast-1.prod.aws.tidbcloud.com"
+  TIDB_PORT: "4000"
+  TIDB_DATABASE: "presensi_pkbm"
+  TIDB_USERNAME: "26ydKHGdCx7tgUs.root"
+  TIDB_PASSWORD: "6Aa9DCOd7XNKDOKi"
+  DB_HOST: "gateway01.ap-southeast-1.prod.aws.tidbcloud.com"
+  DB_PORT: "4000"
+  DB_DATABASE: "presensi_pkbm"
+  DB_USERNAME: "26ydKHGdCx7tgUs.root"
+  DB_PASSWORD: "6Aa9DCOd7XNKDOKi"
